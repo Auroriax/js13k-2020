@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>TOMATO 🍅</title>
+		<link rel="stylesheet" type="text/css" href="style.css">
+		<script src="tomato.js"></script>
+		<script src="rough.js"></script>
+	</head>
+	<body>
+		<canvas id="canvas" width="100" height="100"> </canvas>
+		<script>
+			const timing = new Timing((1/ 10), (1 / 30))
+
+			const canvas = document.getElementById("canvas");
+			const ctx = canvas.getContext("2d");
+			const roughCanvas = rough.canvas(canvas);
+
+			const levelCanvas = document.createElement("canvas");
+			const levelCtx = levelCanvas.getContext("2d");
+			const roughLevel = rough.canvas(levelCanvas);
+
+			//const hb = new HitboxSquare(100,150, 80);
+
+			//const moveHor = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 250)
+			//const moveVer = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 250);
+
+			const scale = 70;
+
+			var mousePos = new Vector2(0,0);
+
+			const obj = {
+				EMPTY: 0,
+				PLAYER: 1,
+				WALL: 2,
+				BOX: 3
+			}
+
+			var levelName = "Test";
+			var levelOffsetX = 0;
+			var levelOffsetY = 0; 
+
+			var grid = [
+				[2,2,2,0],
+				[0,3,1,0],
+				[0,0,0,0],
+				[0,0,0,0],
+			]
+
+			onkeydown = e => {
+				if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == " " || e.key == "Backspace")
+				{
+					e.preventDefault();
+				}
+
+				input(e.key);
+			};
+
+			canvas.addEventListener('mousemove', function(evt) {
+				var rect = canvas.getBoundingClientRect();
+				mousePos = new Vector2(evt.clientX - rect.left, evt.clientY - rect.top);
+				//console.log(mousePos);
+			}, false);
+
+			var gameLoop = setInterval(() => {
+				try {
+					//Init
+					timing.update();
+					//moveHor.update();
+					//moveVer.update();
+
+					canvas.width = canvas.clientWidth;
+					canvas.height = canvas.clientHeight;
+
+					//Step
+
+					var gridHeight = grid.length;
+					var gridWidth = grid[0].length;
+
+					//Render
+					var roughSeed = Math.round(timing.timePlaying) + 1
+
+					var localScale = scale;
+					var verHeight = gridHeight * localScale;
+					var horWidth = gridWidth * localScale;
+
+					levelCanvas.width = horWidth;
+					levelCanvas.height = verHeight;
+
+					var cameraX = canvas.width * 0.5 - horWidth * 0.5;
+					var cameraY = canvas.height * 0.5 - verHeight * 0.5;
+
+					const borderOffset = 5;
+					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, horWidth + borderOffset, verHeight + borderOffset, {seed: roughSeed});
+
+					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, 1, roughSeed);
+					
+					for(let y = -2; y <= 2; y++) {
+						for(let x = -3; x <= 3; x++) {
+							ctx.globalAlpha = 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1);
+							ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
+							
+						}
+					}
+
+					ctx.globalAlpha = 1;
+					ctx.drawImage(levelCanvas, cameraX, cameraY);
+				}
+				catch (e) {
+						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
+						console.log("Here's some extra info to help resolve the issue. (It might contain some personal information.)")
+						console.log("Your user agent is:",navigator.userAgent)
+						console.log("Are your cookies enabled?",navigator.cookieEnabled)
+						console.log("Are you online?",navigator.onLine)
+						console.log("The language your browser is set to:",navigator.language)
+						
+						const canvas = document.getElementById("canvas");
+						if (canvas) {
+							console.log("Size of the canvas:",{width: canvas.width, height: canvas.height})
+						}
+
+						clearInterval(gameLoop);
+					}
+			}, 0);
+
+			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, lineWidth, seed) {
+				for(let y = 0; y != gridHeight; y++) {
+					for(let x = 0; x != gridWidth; x++) {
+						if (grid[y][x]) {
+							var xx = rootX + x * localScale;
+							var yy = rootY + y * localScale;
+							switch (grid[y][x]) {
+								case obj.PLAYER:
+									rghCanvas.circle(xx + localScale * 0.5,yy + localScale * 0.5,localScale * 0.8, {strokeWidth: 1 * lineWidth,seed: seed});
+									break;
+								case obj.WALL:
+									rghCanvas.rectangle(xx,yy,localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
+									break;
+								case obj.BOX:
+									rghCanvas.rectangle(xx,yy,localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+							}
+						}
+					}
+				}
+			}
+
+			function input(key) {
+				var horDelta = 0; 
+				if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1}
+				if (key == "ArrowRight" || key == "d") {horDelta = 1}
+
+				var verDelta = 0;
+				if (key == "ArrowDown" || key == "s") {verDelta = 1}
+				if (key == "ArrowUp" || key == "w") {verDelta = -1}
+
+				if (horDelta != 0 || verDelta != 0) {
+					var gridHeight = grid.length;
+					var gridWidth = grid[0].length;
+					var movementResolved = false;
+
+					for(let y = 0; y != gridHeight; y++) {
+						if (movementResolved) {break;}
+						for(let x = 0; x != gridWidth; x++) {
+							if (movementResolved) {break;}
+							if (grid[y][x] == obj.PLAYER) {
+								var targetX = (x + gridWidth + horDelta) % gridWidth;
+								var targetY = (y + gridHeight + verDelta) % gridHeight;
+
+								var playerTarget = grid[targetY][targetX]
+								if (playerTarget == obj.BOX) {
+									var boxTargetX = (targetX + gridWidth + horDelta) % gridWidth;
+									var boxTargetY = (targetY + gridHeight + verDelta) % gridHeight;
+
+									var boxTarget = grid[boxTargetY][boxTargetX]
+									if (boxTarget == obj.EMPTY) {
+										grid[boxTargetY][boxTargetX] = obj.BOX;
+										grid[targetY][targetX] = obj.PLAYER;
+										grid[y][x] = obj.EMPTY;
+										movementResolved = true;
+										break;
+									}
+								}
+								else if (playerTarget == obj.EMPTY) {
+									grid[targetY][targetX] = obj.PLAYER;
+									grid[y][x] = obj.EMPTY;
+									movementResolved = true;
+									break;
+								}
+							}
+						}
+					}
+				}
+			}
+		</script>
+	</body>
+</html>
