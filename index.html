@@ -33,7 +33,8 @@
 				EMPTY: 0,
 				PLAYER: 1,
 				WALL: 2,
-				BOX: 3
+				BOX: 3,
+				TARGET: 4,
 			}
 
 			var levelName = "Test";
@@ -43,8 +44,8 @@
 			var grid = [
 				[2,2,2,0],
 				[0,3,1,0],
-				[0,0,0,0],
-				[0,0,0,0],
+				[0,2,0,0],
+				[0,0,0,4],
 			]
 
 			onkeydown = e => {
@@ -62,20 +63,44 @@
 				//console.log(mousePos);
 			}, false);
 
+			//Init level
+
+			var gridHeight = grid.length;
+			var gridWidth = grid[0].length;
+
+			var player = {x: 0, y: 0};
+			var walls = [];
+			var boxes = [];
+			var targets = [];
+
+			for(let y = 0; y != gridHeight; y++) {
+				for(let x = 0; x != gridWidth; x++) {
+					if (grid[y][x]) {
+						switch (grid[y][x]) {
+							case obj.PLAYER:
+								this.player = {x: x, y: y}
+								break;
+							case obj.WALL:
+								walls.push({x: x, y: y})
+								break;
+							case obj.BOX:
+								boxes.push({x: x, y: y})
+								break;
+							case obj.TARGET:
+								targets.push({x: x, y: y})
+								break;
+						}
+					}
+				}
+			}
+
 			var gameLoop = setInterval(() => {
 				try {
 					//Init
 					timing.update();
-					//moveHor.update();
-					//moveVer.update();
 
 					canvas.width = canvas.clientWidth;
 					canvas.height = canvas.clientHeight;
-
-					//Step
-
-					var gridHeight = grid.length;
-					var gridWidth = grid[0].length;
 
 					//Render
 					var roughSeed = Math.round(timing.timePlaying) + 1
@@ -84,27 +109,36 @@
 					var verHeight = gridHeight * localScale;
 					var horWidth = gridWidth * localScale;
 
-					levelCanvas.width = horWidth;
-					levelCanvas.height = verHeight;
+					var levelMargin = 20
+					levelCanvas.width = horWidth+levelMargin;
+					levelCanvas.height = verHeight+levelMargin;
 
-					var cameraX = canvas.width * 0.5 - horWidth * 0.5;
-					var cameraY = canvas.height * 0.5 - verHeight * 0.5;
+					var cameraX = canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5;
+					var cameraY = canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5;
 
 					const borderOffset = 5;
-					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, horWidth + borderOffset, verHeight + borderOffset, {seed: roughSeed});
+					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
 
 					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, 1, roughSeed);
 					
 					for(let y = -2; y <= 2; y++) {
 						for(let x = -3; x <= 3; x++) {
-							ctx.globalAlpha = 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1);
-							ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
-							
+							if (x != 0 || y != 0) 
+							{
+								ctx.globalAlpha = 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1);
+								ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
+							}
 						}
 					}
 
 					ctx.globalAlpha = 1;
 					ctx.drawImage(levelCanvas, cameraX, cameraY);
+
+					//QQQ
+					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
+					ctx.font = "24px sans-serif";
+					ctx.fillStyle = "white";
+					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB. Deadline 13th of August!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -124,23 +158,33 @@
 			}, 0);
 
 			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, lineWidth, seed) {
-				for(let y = 0; y != gridHeight; y++) {
-					for(let x = 0; x != gridWidth; x++) {
-						if (grid[y][x]) {
-							var xx = rootX + x * localScale;
-							var yy = rootY + y * localScale;
-							switch (grid[y][x]) {
-								case obj.PLAYER:
-									rghCanvas.circle(xx + localScale * 0.5,yy + localScale * 0.5,localScale * 0.8, {strokeWidth: 1 * lineWidth,seed: seed});
-									break;
-								case obj.WALL:
-									rghCanvas.rectangle(xx,yy,localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
-									break;
-								case obj.BOX:
-									rghCanvas.rectangle(xx,yy,localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
-							}
-						}
-					}
+
+				var off = 10;
+
+				//Player
+				rghCanvas.circle(PosX(player.x) + localScale * 0.5, PosY(player.y) + localScale * 0.5,localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed});
+				
+				//Walls
+				for(let i = 0; i != walls.length; i++) {
+					rghCanvas.rectangle(PosX(walls[i].x),PosY(walls[i].y),localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
+				}
+
+				//Boxes
+				for(let i = 0; i != boxes.length; i++) {
+					rghCanvas.rectangle(PosX(boxes[i].x),PosY(boxes[i].y),localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+				}
+
+				//Target
+				for(let i = 0; i != targets.length; i++) {
+					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5,localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
+				}
+
+				function PosX(val) {
+					return (rootX + off + val * localScale);
+				}
+
+				function PosY(val) {
+					return (rootY + off + val * localScale);
 				}
 			}
 
@@ -154,41 +198,51 @@
 				if (key == "ArrowUp" || key == "w") {verDelta = -1}
 
 				if (horDelta != 0 || verDelta != 0) {
-					var gridHeight = grid.length;
-					var gridWidth = grid[0].length;
 					var movementResolved = false;
 
-					for(let y = 0; y != gridHeight; y++) {
-						if (movementResolved) {break;}
-						for(let x = 0; x != gridWidth; x++) {
-							if (movementResolved) {break;}
-							if (grid[y][x] == obj.PLAYER) {
-								var targetX = (x + gridWidth + horDelta) % gridWidth;
-								var targetY = (y + gridHeight + verDelta) % gridHeight;
+					var targetX = (player.x + gridWidth + horDelta) % gridWidth;
+					var targetY = (player.y + gridHeight + verDelta) % gridHeight;
 
-								var playerTarget = grid[targetY][targetX]
-								if (playerTarget == obj.BOX) {
-									var boxTargetX = (targetX + gridWidth + horDelta) % gridWidth;
-									var boxTargetY = (targetY + gridHeight + verDelta) % gridHeight;
+					let foundBox = hasBox(targetX, targetY);
+					if (foundBox != -1) {
+						let boxTargetX = (targetX + gridWidth + horDelta) % gridWidth;
+						let boxTargetY = (targetY + gridHeight + verDelta) % gridHeight;
 
-									var boxTarget = grid[boxTargetY][boxTargetX]
-									if (boxTarget == obj.EMPTY) {
-										grid[boxTargetY][boxTargetX] = obj.BOX;
-										grid[targetY][targetX] = obj.PLAYER;
-										grid[y][x] = obj.EMPTY;
-										movementResolved = true;
-										break;
-									}
-								}
-								else if (playerTarget == obj.EMPTY) {
-									grid[targetY][targetX] = obj.PLAYER;
-									grid[y][x] = obj.EMPTY;
-									movementResolved = true;
-									break;
-								}
-							}
+						if (!hasWall(boxTargetX, boxTargetY) && !hasBox(boxTargetX, boxTargetY)) {
+							boxes[foundBox] = {x: boxTargetX, y: boxTargetY}
+							player = {x: targetX, y: targetY}
+							movementResolved = true;
+						} else {
+							console.log("Movement not resolved","Could not push box")
 						}
 					}
+					else if (!hasWall(targetX, targetY)) {
+						player = {x: targetX, y: targetY}
+						movementResolved = true;
+					} else {
+						console.log("Movement not resolved","Something was in the way")
+					}
+				}
+
+				function hasThing(array, x, y) {
+					for(let i = 0; i != array.length; i++) {
+						if (array[i].x == x && array[i].y == y) {
+							return i;
+						}
+					}
+					return false;
+				}
+
+				function hasWall(x, y) {
+					return hasThing(walls, x, y)
+				}
+
+				function hasBox(x, y) {
+					return hasThing(boxes, x, y)
+				}
+
+				function hasTarget(x, y) {
+					return hasThing(targets, x, y)
 				}
 			}
 		</script>
