@@ -52,13 +52,20 @@
 				[0,0,2,0,0]
 			]
 			levels[2] = [
-				[2,2,2,2,2],
-				[2,0,0,0,2],
+				[2,2,3,2,2],
+				[2,4,0,4,2],
 				[3,0,1,0,0],
-				[2,0,0,0,2],
-				[2,2,2,2,2]
+				[2,0,3,4,2],
+				[2,2,0,2,2]
 			]
-			var level = 2;
+			levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
+				[0,0,2,0],
+				[1,0,2,0],
+				[0,4,3,4],
+				[2,3,0,3],
+				[0,4,3,4]
+			]
+			var level = 3;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
@@ -87,6 +94,8 @@
 			var walls = [];
 			var boxes = [];
 			var targets = [];
+
+			var steps = "";
 
 			loadLevel(level);
 
@@ -134,7 +143,7 @@
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
 					ctx.font = "24px sans-serif";
 					ctx.fillStyle = "white";
-					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB. Deadline 13th of September!",60,80)
+					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB, Optimization. Deadline 13 September!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -189,15 +198,27 @@
 				if (key == "r") {
 					loadLevel(level);
 					return;
+				} else 
+
+				if (key == "+") {
+					loadLevel(Math.min(level + 1, levels.length-1 ))
+					return;
 				}
 
+				if (key == "-") {
+					loadLevel(Math.max(level - 1, 0 ))
+					return;
+				}
+
+				var dir = "";
+
 				var horDelta = 0; 
-				if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1}
-				if (key == "ArrowRight" || key == "d") {horDelta = 1}
+				if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1; dir = "l"}
+				if (key == "ArrowRight" || key == "d") {horDelta = 1; dir = "r"}
 
 				var verDelta = 0;
-				if (key == "ArrowDown" || key == "s") {verDelta = 1}
-				if (key == "ArrowUp" || key == "w") {verDelta = -1}
+				if (key == "ArrowDown" || key == "s") {verDelta = 1; dir = "d"}
+				if (key == "ArrowUp" || key == "w") {verDelta = -1; dir = "u"}
 
 				console.log("------");
 
@@ -225,18 +246,37 @@
 							console.log("Movement not resolved","Could not push box")
 						}
 					}
-					else if (!hasWall(targetX, targetY)) {
+					else if (hasWall(targetX, targetY) === null) {
 						player = {x: targetX, y: targetY}
 						movementResolved = true;
 					} else {
 						console.log("Movement not resolved","Something was in the way")
 					}
 				}
+
+				if (movementResolved) {
+
+					steps += dir;
+
+					//Check if won
+					var victory = true;
+					for(let i = 0; i != targets.length; i++) {
+						if (hasBox(targets[i].x, targets[i].y) === null) {
+							victory = false; break;
+						}
+					}
+
+					if (victory) {
+						console.warn("Victory!",steps + " (" + steps.length + ")");
+					}
+				}
 			}
 
 			function loadLevel(number) {
-				gridHeight = levels[level].length;
-				gridWidth = levels[level][0].length;
+				level = number;
+
+				gridHeight = levels[number].length;
+				gridWidth = levels[number][0].length;
 				
 				player = {x: 0, y: 0};
 				walls = [];
