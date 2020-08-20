@@ -37,16 +37,32 @@
 				TARGET: 4,
 			}
 
-			var levelName = "Test";
-			var levelOffsetX = 0;
-			var levelOffsetY = 0; 
-
-			var grid = [
+			var levels = [];
+			levels[0] = [
 				[2,2,2,0],
 				[0,3,1,0],
 				[0,2,0,0],
 				[0,0,0,4],
 			]
+			levels[1] = [
+				[0,0,2,0,0],
+				[0,0,4,3,0],
+				[0,2,0,2,0],
+				[0,3,4,0,0],
+				[0,0,2,0,0]
+			]
+			levels[2] = [
+				[2,2,2,2,2],
+				[2,0,0,0,2],
+				[3,0,1,0,0],
+				[2,0,0,0,2],
+				[2,2,2,2,2]
+			]
+			var level = 2;
+
+			var levelName = "Test";
+			var levelOffsetX = 0;
+			var levelOffsetY = 0; 
 
 			onkeydown = e => {
 				if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == " " || e.key == "Backspace")
@@ -64,35 +80,15 @@
 			}, false);
 
 			//Init level
-
-			var gridHeight = grid.length;
-			var gridWidth = grid[0].length;
+			var gridHeight = levels[level].length;
+			var gridWidth = levels[level][0].length;
 
 			var player = {x: 0, y: 0};
 			var walls = [];
 			var boxes = [];
 			var targets = [];
 
-			for(let y = 0; y != gridHeight; y++) {
-				for(let x = 0; x != gridWidth; x++) {
-					if (grid[y][x]) {
-						switch (grid[y][x]) {
-							case obj.PLAYER:
-								this.player = {x: x, y: y}
-								break;
-							case obj.WALL:
-								walls.push({x: x, y: y})
-								break;
-							case obj.BOX:
-								boxes.push({x: x, y: y})
-								break;
-							case obj.TARGET:
-								targets.push({x: x, y: y})
-								break;
-						}
-					}
-				}
-			}
+			loadLevel(level);
 
 			var gameLoop = setInterval(() => {
 				try {
@@ -138,7 +134,7 @@
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
 					ctx.font = "24px sans-serif";
 					ctx.fillStyle = "white";
-					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB. Deadline 13th of August!",60,80)
+					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB. Deadline 13th of September!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -189,6 +185,12 @@
 			}
 
 			function input(key) {
+
+				if (key == "r") {
+					loadLevel(level);
+					return;
+				}
+
 				var horDelta = 0; 
 				if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1}
 				if (key == "ArrowRight" || key == "d") {horDelta = 1}
@@ -197,18 +199,25 @@
 				if (key == "ArrowDown" || key == "s") {verDelta = 1}
 				if (key == "ArrowUp" || key == "w") {verDelta = -1}
 
+				console.log("------");
+
 				if (horDelta != 0 || verDelta != 0) {
 					var movementResolved = false;
 
 					var targetX = (player.x + gridWidth + horDelta) % gridWidth;
 					var targetY = (player.y + gridHeight + verDelta) % gridHeight;
 
+					console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
+
 					let foundBox = hasBox(targetX, targetY);
-					if (foundBox != -1) {
+					console.log("fb: "+foundBox);
+					if (foundBox !== null) {
 						let boxTargetX = (targetX + gridWidth + horDelta) % gridWidth;
 						let boxTargetY = (targetY + gridHeight + verDelta) % gridHeight;
 
-						if (!hasWall(boxTargetX, boxTargetY) && !hasBox(boxTargetX, boxTargetY)) {
+						//console.log("bx: "+boxTargetX+" by:"+boxTargetY);
+						//console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
+						if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null) {
 							boxes[foundBox] = {x: boxTargetX, y: boxTargetY}
 							player = {x: targetX, y: targetY}
 							movementResolved = true;
@@ -223,27 +232,58 @@
 						console.log("Movement not resolved","Something was in the way")
 					}
 				}
+			}
 
-				function hasThing(array, x, y) {
-					for(let i = 0; i != array.length; i++) {
-						if (array[i].x == x && array[i].y == y) {
-							return i;
+			function loadLevel(number) {
+				gridHeight = levels[level].length;
+				gridWidth = levels[level][0].length;
+				
+				player = {x: 0, y: 0};
+				walls = [];
+				boxes = [];
+				targets = [];
+
+				for(let y = 0; y != gridHeight; y++) {
+					for(let x = 0; x != gridWidth; x++) {
+						if (levels[number][y][x]) {
+							switch (levels[number][y][x]) {
+								case obj.PLAYER:
+									this.player = {x: x, y: y}
+									break;
+								case obj.WALL:
+									walls.push({x: x, y: y})
+									break;
+								case obj.BOX:
+									boxes.push({x: x, y: y})
+									break;
+								case obj.TARGET:
+									targets.push({x: x, y: y})
+									break;
+							}
 						}
 					}
-					return false;
 				}
+			}
 
-				function hasWall(x, y) {
-					return hasThing(walls, x, y)
+			function hasThing(array, x, y) {
+				for(let i = 0; i != array.length; i++) {
+					if (array[i].x == x && array[i].y == y) {
+						return i;
+					}
 				}
+				return null;
+			}
 
-				function hasBox(x, y) {
-					return hasThing(boxes, x, y)
-				}
+			function hasWall(x, y) {
+				return hasThing(walls, x, y)
+			}
 
-				function hasTarget(x, y) {
-					return hasThing(targets, x, y)
-				}
+			function hasBox(x, y) {
+				return hasThing(boxes, x, y)
+			}
+
+			function hasTarget(x, y) {
+				return hasThing(targets, x, y)
 			}
 		</script>
 	</body>
