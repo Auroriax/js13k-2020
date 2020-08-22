@@ -10,6 +10,9 @@
 	<body>
 		<canvas id="canvas" width="100" height="100"> </canvas>
 		<script>
+			const scale = 70;
+			var roughSeed = 1;
+
 			const timing = new Timing((1/ 10), (1 / 30))
 
 			const canvas = document.getElementById("canvas");
@@ -20,12 +23,15 @@
 			const levelCtx = levelCanvas.getContext("2d");
 			const roughLevel = rough.canvas(levelCanvas);
 
+			const wallCanvas = document.createElement("canvas");
+			const wallCtx = wallCanvas.getContext("2d");
+			const roughWall = rough.canvas(wallCanvas);
+			const wallMargin = 10;
+
 			//const hb = new HitboxSquare(100,150, 80);
 
 			//const moveHor = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 250)
 			//const moveVer = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 250);
-
-			const scale = 70;
 
 			var mousePos = new Vector2(0,0);
 
@@ -65,7 +71,15 @@
 				[2,3,0,3],
 				[0,4,3,4]
 			]
-			var level = 3;
+			levels[4] = [
+				[2,2,2,2,2,2,2,2,2],
+				[2,2,2,2,2,2,2,2,2],
+				[2,2,2,2,2,2,2,2,2],
+				[2,2,2,2,2,2,2,2,2],
+				[2,2,2,2,2,2,2,2,2],
+				[2,2,2,2,2,2,2,2,2]
+			]
+			var level = 4;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
@@ -108,11 +122,15 @@
 					canvas.height = canvas.clientHeight;
 
 					//Render
-					var roughSeed = Math.round(timing.timePlaying) + 1
+					roughSeed = Math.round(timing.timePlaying) + 1
 
 					var localScale = scale;
 					var verHeight = gridHeight * localScale;
 					var horWidth = gridWidth * localScale;
+
+					wallCanvas.width = localScale+wallMargin;
+					wallCanvas.height = localScale+wallMargin;
+					roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, scale, scale, {fill: "solid", strokeWidth: 1, seed: roughSeed});
 
 					var levelMargin = 20
 					levelCanvas.width = horWidth+levelMargin;
@@ -171,17 +189,20 @@
 				
 				//Walls
 				for(let i = 0; i != walls.length; i++) {
-					rghCanvas.rectangle(PosX(walls[i].x),PosY(walls[i].y),localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
+					var even = (walls[i].x + walls[i].y);
+					levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
+					//rghCanvas.rectangle(PosX(walls[i].x),PosY(walls[i].y),localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
 				}
 
 				//Boxes
 				for(let i = 0; i != boxes.length; i++) {
 					rghCanvas.rectangle(PosX(boxes[i].x),PosY(boxes[i].y),localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+					//rghCanvas.rectangle(PosX(boxes[i].x), PosY(boxes[i].y), 0, localScale, localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
 				}
 
 				//Target
 				for(let i = 0; i != targets.length; i++) {
-					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5,localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
+					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
 				}
 
 				function PosX(val) {
@@ -283,6 +304,8 @@
 				boxes = [];
 				targets = [];
 
+				steps = "";
+
 				for(let y = 0; y != gridHeight; y++) {
 					for(let x = 0; x != gridWidth; x++) {
 						if (levels[number][y][x]) {
@@ -324,6 +347,10 @@
 
 			function hasTarget(x, y) {
 				return hasThing(targets, x, y)
+			}
+
+			function even(val) {
+				return ((val % 2) == 0)
 			}
 		</script>
 	</body>
