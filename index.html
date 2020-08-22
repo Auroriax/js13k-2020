@@ -10,7 +10,7 @@
 	<body>
 		<canvas id="canvas" width="100" height="100"> </canvas>
 		<script>
-			const scale = 70;
+			var scale = 70;
 			var roughSeed = 1;
 
 			const timing = new Timing((1/ 10), (1 / 30))
@@ -27,6 +27,8 @@
 			const wallCtx = wallCanvas.getContext("2d");
 			const roughWall = rough.canvas(wallCanvas);
 			const wallMargin = 10;
+
+			let undoStack = [];
 
 			//const hb = new HitboxSquare(100,150, 80);
 
@@ -72,14 +74,22 @@
 				[0,4,3,4]
 			]
 			levels[4] = [
-				[2,2,2,2,2,2,2,2,2],
-				[2,2,2,2,2,2,2,2,2],
-				[2,2,2,2,2,2,2,2,2],
-				[2,2,2,2,2,2,2,2,2],
-				[2,2,2,2,2,2,2,2,2],
+				[0,0,0,0,0,0,0,0,0],
+				[2,2,2,0,0,0,0,0,0],
+				[0,0,2,0,0,0,0,0,0],
+				[0,0,0,0,0,0,0,0,0],
+				[0,0,2,0,0,0,0,0,0],
 				[2,2,2,2,2,2,2,2,2]
 			]
-			var level = 4;
+			levels[5] = [
+				[3,0,0,0,0,0],
+				[0,2,2,0,2,2],
+				[0,2,0,4,0,2],
+				[3,3,4,1,4,3],
+				[0,2,0,4,0,2],
+				[0,2,2,0,2,2]
+			]
+			var level = 5;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
@@ -122,7 +132,13 @@
 					canvas.height = canvas.clientHeight;
 
 					//Render
-					roughSeed = Math.round(timing.timePlaying) + 1
+					roughSeed = Math.round(timing.timePlaying) + 1;
+
+					if (canvas.width < 500) {
+						scale = 40;
+					} else {
+						scale = 70;
+					}
 
 					var localScale = scale;
 					var verHeight = gridHeight * localScale;
@@ -132,7 +148,7 @@
 					wallCanvas.height = localScale+wallMargin;
 					roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, scale, scale, {fill: "solid", strokeWidth: 1, seed: roughSeed});
 
-					var levelMargin = 20
+					var levelMargin = 20; //In pixels, positive
 					levelCanvas.width = horWidth+levelMargin;
 					levelCanvas.height = verHeight+levelMargin;
 
@@ -144,12 +160,20 @@
 
 					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, 1, roughSeed);
 					
-					for(let y = -2; y <= 2; y++) {
-						for(let x = -3; x <= 3; x++) {
+					var clipOffset = 10; //In pixels, positive
+					var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
+					var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
+
+					console.log("w: "+screenWidthRatio + "h: "+screenHeightRatio);
+
+					for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
+						for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
 							if (x != 0 || y != 0) 
 							{
 								ctx.globalAlpha = 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1);
-								ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
+								if (ctx.globalAlpha > 0) {
+									ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
+								}
 							}
 						}
 					}
@@ -191,13 +215,11 @@
 				for(let i = 0; i != walls.length; i++) {
 					var even = (walls[i].x + walls[i].y);
 					levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
-					//rghCanvas.rectangle(PosX(walls[i].x),PosY(walls[i].y),localScale,localScale, {fill: "solid", strokeWidth: 1 * lineWidth, seed: seed});
 				}
 
 				//Boxes
 				for(let i = 0; i != boxes.length; i++) {
 					rghCanvas.rectangle(PosX(boxes[i].x),PosY(boxes[i].y),localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
-					//rghCanvas.rectangle(PosX(boxes[i].x), PosY(boxes[i].y), 0, localScale, localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
 				}
 
 				//Target
@@ -219,15 +241,27 @@
 				if (key == "r") {
 					loadLevel(level);
 					return;
-				} else 
-
-				if (key == "+") {
+				} else if (key == "+") {
 					loadLevel(Math.min(level + 1, levels.length-1 ))
 					return;
-				}
-
-				if (key == "-") {
+				} else if (key == "-") {
 					loadLevel(Math.max(level - 1, 0 ))
+					return;
+				} else if (key == "z") {
+					if (undoStack.length != 0) {
+						var stateToRestore = undoStack.pop();
+
+						player = stateToRestore.player;
+						boxes = stateToRestore.boxes;
+						
+						/*for(let i = 0; i != boxes.length; i += 1) {
+							boxes[i] = stateToRestore.boxes[i];
+						}*/
+
+						steps = steps.slice(0, -1);
+
+						console.warn("Popped the undo stack, remaining entries:", undoStack.length)
+					}
 					return;
 				}
 
@@ -244,6 +278,8 @@
 				console.log("------");
 
 				if (horDelta != 0 || verDelta != 0) {
+					undoStack.push({player: player, boxes: boxes.slice()}) //Other objects can't move, so aren't stored.
+
 					var movementResolved = false;
 
 					var targetX = (player.x + gridWidth + horDelta) % gridWidth;
@@ -276,7 +312,6 @@
 				}
 
 				if (movementResolved) {
-
 					steps += dir;
 
 					//Check if won
@@ -290,6 +325,8 @@
 					if (victory) {
 						console.warn("Victory!",steps + " (" + steps.length + ")");
 					}
+				} else {
+					undoStack.pop(); //Nothing changed, so discard Undo state.
 				}
 			}
 
@@ -305,6 +342,7 @@
 				targets = [];
 
 				steps = "";
+				undoStack = [];
 
 				for(let y = 0; y != gridHeight; y++) {
 					for(let x = 0; x != gridWidth; x++) {
