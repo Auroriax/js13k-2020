@@ -256,7 +256,7 @@
 			function input(key) {
 
 				if (key == "r") {
-					loadLevel(level);
+					loadLevel(level, false);
 					return;
 				} else if (key == "+") {
 					loadLevel(Math.min(level + 1, levels.length-1 ))
@@ -345,7 +345,7 @@
 				}
 			}
 
-			function loadLevel(number) {
+			function loadLevel(number, resetStack = true) {
 				level = number;
 
 				var lvl = levels[number].slice()
@@ -377,9 +377,6 @@
 					levelOffsetY = 0;
 				}
 
-				steps = "";
-				undoStack = [];
-
 				for(let y = 0; y < gridHeight; y++) {
 					for(let x = 0; x < gridWidth; x++) {
 						if (lvl[y][x]) {
@@ -399,6 +396,13 @@
 							}
 						}
 					}
+				}
+
+				if (resetStack) {
+					undoStack = [];
+					steps = "";
+				} else {
+					steps += "!";
 				}
 			}
 
