@@ -30,11 +30,6 @@
 
 			let undoStack = [];
 
-			//const hb = new HitboxSquare(100,150, 80);
-
-			//const moveHor = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 250)
-			//const moveVer = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 250);
-
 			var mousePos = new Vector2(0,0);
 
 			const obj = {
@@ -47,12 +42,14 @@
 
 			var levels = [];
 			levels[0] = [
+				{name: "QQQ"},
 				[2,2,2,0],
 				[0,3,1,0],
 				[0,2,0,0],
 				[0,0,0,4],
 			]
 			levels[1] = [
+				{name: "QQQ"},
 				[0,0,2,0,0],
 				[0,0,4,3,0],
 				[0,2,0,2,0],
@@ -60,6 +57,7 @@
 				[0,0,2,0,0]
 			]
 			levels[2] = [
+				{name: "QQQ"},
 				[2,2,3,2,2],
 				[2,4,0,4,2],
 				[3,0,1,0,0],
@@ -67,6 +65,7 @@
 				[2,2,0,2,2]
 			]
 			levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
+				{name: "QQQ"},
 				[0,0,2,0],
 				[1,0,2,0],
 				[0,4,3,4],
@@ -74,6 +73,7 @@
 				[0,4,3,4]
 			]
 			levels[4] = [
+				{name: "Continuous Corridor"},
 				[0,0,0,0,0,0,0,0,0],
 				[2,2,2,0,0,0,0,0,0],
 				[0,0,2,0,0,0,0,0,0],
@@ -82,6 +82,7 @@
 				[2,2,2,2,2,2,2,2,2]
 			]
 			levels[5] = [
+				{name: "Twisted Terrace", xOff: 3},
 				[3,0,0,0,0,0],
 				[0,2,2,0,2,2],
 				[0,2,0,4,0,2],
@@ -89,11 +90,20 @@
 				[0,2,0,4,0,2],
 				[0,2,2,0,2,2]
 			]
-			var level = 5;
+			levels[6] = [
+				{name: "Test", xOff: 3},
+				[0,0,0,0,0,0],
+				[0,0,0,0,0,0],
+				[0,0,2,3,0,0],
+				[0,0,1,4,0,0],
+				[0,0,0,0,0,0],
+				[0,0,0,0,0,0]
+			]
+			var level = 6;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
-			var levelOffsetY = 0; 
+			var levelOffsetY = 0; //QQQ Can't both be non-zero, might implement this later
 
 			onkeydown = e => {
 				if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == " " || e.key == "Backspace")
@@ -164,7 +174,10 @@
 					var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
 					var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
 
-					console.log("w: "+screenWidthRatio + "h: "+screenHeightRatio);
+					if (levelOffsetX != 0) {screenWidthRatio += 1}
+					if (levelOffsetY != 0) {screenHeightRatio += 1}
+
+					//console.log("w: "+screenWidthRatio + "h: "+screenHeightRatio);
 
 					for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
 						for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
@@ -172,7 +185,9 @@
 							{
 								ctx.globalAlpha = 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1);
 								if (ctx.globalAlpha > 0) {
-									ctx.drawImage(levelCanvas, cameraX + horWidth * x, cameraY + verHeight * y);
+									ctx.drawImage(levelCanvas, 
+									cameraX + horWidth * x + levelOffsetX * scale * y,
+									cameraY + verHeight * y + levelOffsetY * scale * x);
 								}
 							}
 						}
@@ -180,6 +195,8 @@
 
 					ctx.globalAlpha = 1;
 					ctx.drawImage(levelCanvas, cameraX, cameraY);
+
+					drawStroked(levelName, 40, canvas.height - 40)
 
 					//QQQ
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
@@ -253,10 +270,6 @@
 
 						player = stateToRestore.player;
 						boxes = stateToRestore.boxes;
-						
-						/*for(let i = 0; i != boxes.length; i += 1) {
-							boxes[i] = stateToRestore.boxes[i];
-						}*/
 
 						steps = steps.slice(0, -1);
 
@@ -282,16 +295,18 @@
 
 					var movementResolved = false;
 
-					var targetX = (player.x + gridWidth + horDelta) % gridWidth;
-					var targetY = (player.y + gridHeight + verDelta) % gridHeight;
+					var target = wrapCoords(player.x + horDelta, player.y + verDelta);
+					var targetX = target.x;
+					var targetY = target.y;
 
 					console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
 
 					let foundBox = hasBox(targetX, targetY);
 					console.log("fb: "+foundBox);
 					if (foundBox !== null) {
-						let boxTargetX = (targetX + gridWidth + horDelta) % gridWidth;
-						let boxTargetY = (targetY + gridHeight + verDelta) % gridHeight;
+						var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta)
+						let boxTargetX = boxTarget.x;
+						let boxTargetY = boxTarget.y;
 
 						//console.log("bx: "+boxTargetX+" by:"+boxTargetY);
 						//console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
@@ -333,21 +348,42 @@
 			function loadLevel(number) {
 				level = number;
 
-				gridHeight = levels[number].length;
-				gridWidth = levels[number][0].length;
+				var lvl = levels[number].slice()
+				var metadata = lvl.shift();
+
+				gridHeight = lvl.length;
+				gridWidth = lvl[0].length;
 				
 				player = {x: 0, y: 0};
 				walls = [];
 				boxes = [];
 				targets = [];
 
+				if (metadata.name) {
+					levelName = metadata.name;
+				} else {
+					levelName = "";
+				}
+
+				if (metadata.xOff) {
+					levelOffsetX = metadata.xOff;
+				} else {
+					levelOffsetX = 0;
+				}
+
+				if (metadata.yOff) {
+					levelOffsetY = metadata.yOff;
+				} else {
+					levelOffsetY = 0;
+				}
+
 				steps = "";
 				undoStack = [];
 
-				for(let y = 0; y != gridHeight; y++) {
-					for(let x = 0; x != gridWidth; x++) {
-						if (levels[number][y][x]) {
-							switch (levels[number][y][x]) {
+				for(let y = 0; y < gridHeight; y++) {
+					for(let x = 0; x < gridWidth; x++) {
+						if (lvl[y][x]) {
+							switch (lvl[y][x]) {
 								case obj.PLAYER:
 									this.player = {x: x, y: y}
 									break;
@@ -364,6 +400,49 @@
 						}
 					}
 				}
+			}
+
+			function wrapCoords(newX, newY) {
+				function wrapX() {
+					if (newX >= gridWidth) {
+						newX -= gridWidth;
+						newY -= levelOffsetY;
+						//console.log("X-");
+						return true;
+					} else if (newX < 0) {
+						newX += gridWidth;
+						newY += levelOffsetY;
+						//console.log("X+");
+						return true;
+					}
+					return false;
+				}
+
+				function wrapY() {
+					if (newY >= gridHeight) {
+						newY -= gridHeight;
+						newX -= levelOffsetX;
+						//console.log("Y-");
+						return true;
+					} else if (newY < 0) {
+						newY += gridHeight;
+						newX += levelOffsetX;
+						//console.log("Y+");
+						return true;
+					}
+					return false;
+				}
+
+				var wrappedOnX = wrapX();
+				var wrappedOnY = wrapY();
+				if (!wrappedOnX) {
+					wrapX();
+				}
+				/*if (!wrappedOnY) {
+					wrapY();
+				}*/
+
+				return {x: newX, y: newY}
 			}
 
 			function hasThing(array, x, y) {
@@ -389,6 +468,17 @@
 
 			function even(val) {
 				return ((val % 2) == 0)
+			}
+
+			//From https://stackoverflow.com/questions/13627111/drawing-text-with-an-outer-stroke-with-html5s-canvas
+			function drawStroked(text, x, y) {
+				ctx.miterLimit = 2;
+				ctx.font = '40px sans-serif';
+				ctx.strokeStyle = 'black';
+				ctx.lineWidth = 8;
+				ctx.strokeText(text, x, y);
+				ctx.fillStyle = 'white';
+				ctx.fillText(text, x, y);
 			}
 		</script>
 	</body>
