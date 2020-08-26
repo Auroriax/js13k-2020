@@ -91,12 +91,14 @@
 				[0,2,2,0,2,2]
 			]
 			levels[6] = [
-				{name: "Test", xOff: 3},
+				{name: "Test", xOff: 2},
+				[0,2,2,2,2,2],
+				[0,1,0,0,0,0],
+				[0,0,3,0,0,0],
 				[0,0,0,0,0,0],
+				[0,2,2,2,2,2],
 				[0,0,0,0,0,0],
-				[0,0,2,3,0,0],
-				[0,0,1,4,0,0],
-				[0,0,0,0,0,0],
+				[0,0,0,4,0,0],
 				[0,0,0,0,0,0]
 			]
 			var level = 6;
@@ -131,12 +133,17 @@
 
 			var steps = "";
 
+			var timeSinceLastAction = 0;
+			var timeToCompleteTween = 1000; //in milliseconds
+
 			loadLevel(level);
 
 			var gameLoop = setInterval(() => {
 				try {
 					//Init
 					timing.update();
+
+					timeSinceLastAction += timing.currentFrameLength;
 
 					canvas.width = canvas.clientWidth;
 					canvas.height = canvas.clientHeight;
@@ -162,11 +169,12 @@
 					levelCanvas.width = horWidth+levelMargin;
 					levelCanvas.height = verHeight+levelMargin;
 
-					var cameraX = canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5;
-					var cameraY = canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5;
+					var cameraX = canvas.width * 0.5 - horWidth * 0.5;
+					var cameraY = canvas.height * 0.5 - verHeight * 0.5;
 
 					const borderOffset = 5;
-					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
+					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, 
+						horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
 
 					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, 1, roughSeed);
 					
@@ -219,15 +227,21 @@
 
 						clearInterval(gameLoop);
 					}
-			}, 0);
+			}, (1 / 60) * 1000);
 
 			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, lineWidth, seed) {
 
 				var off = 10;
 
 				//Player
-				rghCanvas.circle(PosX(player.x) + localScale * 0.5, PosY(player.y) + localScale * 0.5,localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed});
-				
+				var playerTween = tweenPlayer();
+				rghCanvas.circle(PosX(playerTween.x) + localScale * 0.5, PosY(playerTween.y) + localScale * 0.5,
+					localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed}); //Center
+				/*if (player.x == 0) {
+					rghCanvas.circle(PosX(playerTween.x) + localScale * 0.5, PosY(playerTween.y) + localScale * 0.5 + (gridHeight * localScale),
+						localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed}); //Bottom
+				}*/
+
 				//Walls
 				for(let i = 0; i != walls.length; i++) {
 					var even = (walls[i].x + walls[i].y);
@@ -242,6 +256,40 @@
 				//Target
 				for(let i = 0; i != targets.length; i++) {
 					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
+				}
+
+				function tweenPlayer() {
+					if (undoStack.length > 0 && timeSinceLastAction < timeToCompleteTween) {
+						var lastState = undoStack[undoStack.length-1];
+						var source = lastState.player;
+
+						var diffX = Math.round(player.x - source.x);
+						var diffY = Math.round(player.y - source.y);
+
+						//console.log("Before! dx: "+diffX," dy:"+diffY);
+
+						if (diffX != 0 && diffY != 0) {
+							//Which one's the highest?
+							if (Math.abs(diffX) >= Math.abs(diffY)) {
+								diffX -= Math.sign(diffX) * gridWidth;
+								diffY = 0;
+							} else {
+								diffY -= Math.sign(diffX) * gridHeight;
+								diffX = 0;
+							}
+						} else if (Math.abs(diffX) > 1) {
+							diffX -= Math.sign(diffX) * gridWidth;
+						} else if (Math.abs(diffY) > 1) {
+							diffY -= Math.sign(diffY) * gridHeight;
+						}
+
+						//console.log("After! dx: "+diffX," dy:"+diffY);
+
+						var percent = 1-Clamp((timeSinceLastAction / timeToCompleteTween) * 1000, 0, 1)
+						return ({x: player.x - (diffX * percent), y: player.y - (diffY * percent)});
+					} else {
+						return({x: player.x, y: player.y});
+					}
 				}
 
 				function PosX(val) {
@@ -328,6 +376,7 @@
 
 				if (movementResolved) {
 					steps += dir;
+					timeSinceLastAction = 0;
 
 					//Check if won
 					var victory = true;
