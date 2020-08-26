@@ -232,25 +232,46 @@
 			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, lineWidth, seed) {
 
 				var off = 10;
+				var hscl = localScale * 0.5 //Half scale
 
 				//Player
 				var playerTween = tweenPlayer();
-				rghCanvas.circle(PosX(playerTween.x) + localScale * 0.5, PosY(playerTween.y) + localScale * 0.5,
-					localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed}); //Center
-				/*if (player.x == 0) {
-					rghCanvas.circle(PosX(playerTween.x) + localScale * 0.5, PosY(playerTween.y) + localScale * 0.5 + (gridHeight * localScale),
-						localScale * 0.8, {strokeWidth: 1 * lineWidth, seed: seed}); //Bottom
-				}*/
 
-				//Walls
-				for(let i = 0; i != walls.length; i++) {
-					var even = (walls[i].x + walls[i].y);
-					levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
+				drawWrapped(player, drawPlayer);
+
+				function drawPlayer(offsetX = 0, offsetY = 0) {
+					rghCanvas.circle(PosX(playerTween.x) + hscl + offsetX, PosY(playerTween.y) + hscl + offsetY, localScale * 0.8, 
+						{strokeWidth: 1 * lineWidth, seed: seed});
+				}
+
+				function drawWrapped(object, drawFunction) {
+
+					drawFunction()
+
+					if (object.x == 0) {
+						drawFunction(gridWidth * localScale, levelOffsetY * localScale)
+					} else if (object.x == gridWidth-1) {
+						drawFunction(-gridWidth * localScale, -levelOffsetY * localScale)
+					} 
+					
+					if (object.y == 0) {
+						drawFunction(levelOffsetX * localScale, gridHeight * localScale)
+					} else if (object.y == gridHeight-1) {
+						drawFunction(-levelOffsetX * localScale, -gridHeight * localScale)
+					}
 				}
 
 				//Boxes
 				for(let i = 0; i != boxes.length; i++) {
-					rghCanvas.rectangle(PosX(boxes[i].x),PosY(boxes[i].y),localScale,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+					var boxTween = tweenBox(i);
+					
+					drawWrapped(boxes[i], drawBox)
+
+					function drawBox(offsetX = 0, offsetY = 0) {
+						rghCanvas.rectangle(PosX(boxTween.x) + offsetX, PosY(boxTween.y) + offsetY, 
+							localScale ,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+					}
+
 				}
 
 				//Target
@@ -258,18 +279,40 @@
 					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
 				}
 
+				//Walls
+				for(let i = 0; i != walls.length; i++) {
+					var even = (walls[i].x + walls[i].y);
+					levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
+				}
+
 				function tweenPlayer() {
-					if (undoStack.length > 0 && timeSinceLastAction < timeToCompleteTween) {
+					if (undoStack.length > 0) {
 						var lastState = undoStack[undoStack.length-1];
 						var source = lastState.player;
+						return tweenObject(player, source);
+					}
+					else {
+						return({x: player.x, y: player.y});
+					}
+				}
 
-						var diffX = Math.round(player.x - source.x);
-						var diffY = Math.round(player.y - source.y);
+				function tweenBox(id) {
+					if (undoStack.length > 0) {
+						var lastState = undoStack[undoStack.length-1];
+						var source = lastState.boxes[id];
+						return tweenObject(boxes[id], source);
+					}
+					else {
+						return({x: boxes[id].x, y: boxes[id].y});
+					}
+				}
 
-						//console.log("Before! dx: "+diffX," dy:"+diffY);
+				function tweenObject(current, source) {
+					if (timeSinceLastAction < timeToCompleteTween) {
+						var diffX = Math.round(current.x - source.x);
+						var diffY = Math.round(current.y - source.y);
 
 						if (diffX != 0 && diffY != 0) {
-							//Which one's the highest?
 							if (Math.abs(diffX) >= Math.abs(diffY)) {
 								diffX -= Math.sign(diffX) * gridWidth;
 								diffY = 0;
@@ -283,12 +326,10 @@
 							diffY -= Math.sign(diffY) * gridHeight;
 						}
 
-						//console.log("After! dx: "+diffX," dy:"+diffY);
-
 						var percent = 1-Clamp((timeSinceLastAction / timeToCompleteTween) * 1000, 0, 1)
-						return ({x: player.x - (diffX * percent), y: player.y - (diffY * percent)});
+						return ({x: current.x - (diffX * percent), y: current.y - (diffY * percent)});
 					} else {
-						return({x: player.x, y: player.y});
+						return({x: current.x, y: current.y});
 					}
 				}
 
