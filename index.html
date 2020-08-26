@@ -16,7 +16,7 @@
 			const timing = new Timing((1/ 10), (1 / 30))
 
 			const canvas = document.getElementById("canvas");
-			const ctx = canvas.getContext("2d");
+			const ctx = canvas.getContext("2d", { alpha: false });
 			const roughCanvas = rough.canvas(canvas);
 
 			const levelCanvas = document.createElement("canvas");
@@ -91,8 +91,8 @@
 				[0,2,2,0,2,2]
 			]
 			levels[6] = [
-				{name: "Test", xOff: 2},
-				[0,2,2,2,2,2],
+				{name: "Test", xOff: 4},
+				[0,0,0,0,0,0],
 				[0,1,0,0,0,0],
 				[0,0,3,0,0,0],
 				[0,0,0,0,0,0],
@@ -134,7 +134,7 @@
 			var steps = "";
 
 			var timeSinceLastAction = 0;
-			var timeToCompleteTween = 1000; //in milliseconds
+			var timeToCompleteTween = 1000; //250; //in milliseconds
 
 			loadLevel(level);
 
@@ -147,6 +147,9 @@
 
 					canvas.width = canvas.clientWidth;
 					canvas.height = canvas.clientHeight;
+
+					ctx.fillStyle = "white";
+					ctx.fillRect(0,0,canvas.width, canvas.height);
 
 					//Render
 					roughSeed = Math.round(timing.timePlaying) + 1;
@@ -169,8 +172,8 @@
 					levelCanvas.width = horWidth+levelMargin;
 					levelCanvas.height = verHeight+levelMargin;
 
-					var cameraX = canvas.width * 0.5 - horWidth * 0.5;
-					var cameraY = canvas.height * 0.5 - verHeight * 0.5;
+					var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5);
+					var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5);
 
 					const borderOffset = 5;
 					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, 
@@ -210,7 +213,7 @@
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
 					ctx.font = "24px sans-serif";
 					ctx.fillStyle = "white";
-					ctx.fillText("Todo: Level Select, Puzzles, Tweens, More block types, Keep under 13KB, Optimization. Deadline 13 September!",60,80)
+					ctx.fillText("Todo: Level Select, Puzzles, More block types, Keep under 13KB, Optimization. Deadline 13 September!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -240,7 +243,8 @@
 				drawWrapped(player, drawPlayer);
 
 				function drawPlayer(offsetX = 0, offsetY = 0) {
-					rghCanvas.circle(PosX(playerTween.x) + hscl + offsetX, PosY(playerTween.y) + hscl + offsetY, localScale * 0.8, 
+					rghCanvas.circle(PosX(playerTween.x) + hscl + offsetX, 
+						PosY(playerTween.y) + hscl + offsetY, localScale * 0.8, 
 						{strokeWidth: 1 * lineWidth, seed: seed});
 				}
 
@@ -249,30 +253,35 @@
 					drawFunction()
 
 					if (object.x == 0) {
-						drawFunction(gridWidth * localScale, levelOffsetY * localScale)
+						var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
+						drawFunction(gridWidth * localScale, wrapY * localScale)
 					} else if (object.x == gridWidth-1) {
-						drawFunction(-gridWidth * localScale, -levelOffsetY * localScale)
-					} 
+						var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
+						drawFunction(-gridWidth * localScale, wrapY * localScale)
+					}
 					
 					if (object.y == 0) {
-						drawFunction(levelOffsetX * localScale, gridHeight * localScale)
+						var wrapX = ((object.x + levelOffsetX + gridWidth) % gridWidth) - object.x;
+						console.log("wrapX"+wrapX);
+						drawFunction(wrapX * localScale, gridHeight * localScale)
 					} else if (object.y == gridHeight-1) {
-						drawFunction(-levelOffsetX * localScale, -gridHeight * localScale)
+						var wrapX = ((object.x - levelOffsetX + gridWidth) % gridWidth) - object.x;
+						drawFunction(wrapX * localScale, -gridHeight * localScale)
 					}
 				}
 
 				//Boxes
-				for(let i = 0; i != boxes.length; i++) {
+				/*for(let i = 0; i != boxes.length; i++) {
 					var boxTween = tweenBox(i);
 					
 					drawWrapped(boxes[i], drawBox)
 
 					function drawBox(offsetX = 0, offsetY = 0) {
-						rghCanvas.rectangle(PosX(boxTween.x) + offsetX, PosY(boxTween.y) + offsetY, 
+						rghCanvas.rectangle(Math.round(PosX(boxTween.x)) + offsetX, Math.round(PosY(boxTween.y) + offsetY), 
 							localScale ,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
 					}
 
-				}
+				}*/
 
 				//Target
 				for(let i = 0; i != targets.length; i++) {
@@ -312,12 +321,13 @@
 						var diffX = Math.round(current.x - source.x);
 						var diffY = Math.round(current.y - source.y);
 
+						console.log("Before: x:"+diffX + "y: "+diffY)
 						if (diffX != 0 && diffY != 0) {
 							if (Math.abs(diffX) >= Math.abs(diffY)) {
 								diffX -= Math.sign(diffX) * gridWidth;
 								diffY = 0;
 							} else {
-								diffY -= Math.sign(diffX) * gridHeight;
+								diffY -= Math.sign(diffY) * gridHeight;
 								diffX = 0;
 							}
 						} else if (Math.abs(diffX) > 1) {
@@ -325,6 +335,8 @@
 						} else if (Math.abs(diffY) > 1) {
 							diffY -= Math.sign(diffY) * gridHeight;
 						}
+
+						//console.log("x: "+diffX + " y: "+diffY)
 
 						var percent = 1-Clamp((timeSinceLastAction / timeToCompleteTween) * 1000, 0, 1)
 						return ({x: current.x - (diffX * percent), y: current.y - (diffY * percent)});
