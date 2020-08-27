@@ -9,69 +9,8 @@
 	</head>
 	<body>
 		<canvas id="canvas" width="100" height="100"> </canvas>
+		<script src="levels.js"></script>
 		<script>
-			var levels = [];
-			levels[0] = [
-				{name: "QQQ"},
-				"##..",
-				".bp.",
-				".#..",
-				"...4",
-			]
-			levels[1] = [
-				{name: "QQQ"},
-				"..#..",
-				"..tb.",
-				".#.#.",
-				".bt..",
-				"..#.."
-			]
-			levels[2] = [
-				{name: "QQQ"},
-				"##b##",
-				"#t.t#",
-				"b.p..",
-				"#.bt#",
-				"##.##"
-			]
-			levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
-				{name: "QQQ"},
-				"..#.",
-				"p.#.",
-				".tbt",
-				"#b.b",
-				".tbt",
-			]
-			levels[4] = [
-				{name: "Continuous Corridor"},
-				".........",
-				".........",
-				".........",
-				".........",
-				".........",
-				"........."
-			]
-			levels[5] = [
-				{name: "Twisted Terrace", xOff: 3},
-				"b.....",
-				".##.##",
-				".#.t.#",
-				"bbtptb",
-				".#.t.#",
-				".##.##"
-			]
-			levels[6] = [
-				{name: "Test", xOff: 4},
-				"......",
-				".p....",
-				"..b...",
-				"......",
-				".#####",
-				"......",
-				"...t..",
-				"......"
-			]
-
 			var scale = 70;
 			var roughSeed = 1;
 
@@ -115,8 +54,6 @@
 				BOX: "b",
 				TARGET: "t",
 			} //all lowercase if applicable!
-
-			var level = 0;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
@@ -280,13 +217,13 @@
 						var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
 						drawFunction(gridWidth * localScale, wrapY * localScale)
 					} else if (object.x == gridWidth-1) {
-						var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
+						var wrapY = ((object.y - levelOffsetY + gridHeight) % gridHeight) - object.y;
 						drawFunction(-gridWidth * localScale, wrapY * localScale)
 					}
 					
 					if (object.y == 0) {
 						var wrapX = ((object.x + levelOffsetX + gridWidth) % gridWidth) - object.x;
-						console.log("wrapX"+wrapX);
+						//console.log("wrapX"+wrapX);
 						drawFunction(wrapX * localScale, gridHeight * localScale)
 					} else if (object.y == gridHeight-1) {
 						var wrapX = ((object.x - levelOffsetX + gridWidth) % gridWidth) - object.x;
