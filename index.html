@@ -13,63 +13,63 @@
 			var levels = [];
 			levels[0] = [
 				{name: "QQQ"},
-				[2,2,2,0],
-				[0,3,1,0],
-				[0,2,0,0],
-				[0,0,0,4],
+				"##..",
+				".bp.",
+				".#..",
+				"...4",
 			]
 			levels[1] = [
 				{name: "QQQ"},
-				[0,0,2,0,0],
-				[0,0,4,3,0],
-				[0,2,0,2,0],
-				[0,3,4,0,0],
-				[0,0,2,0,0]
+				"..#..",
+				"..tb.",
+				".#.#.",
+				".bt..",
+				"..#.."
 			]
 			levels[2] = [
 				{name: "QQQ"},
-				[2,2,3,2,2],
-				[2,4,0,4,2],
-				[3,0,1,0,0],
-				[2,0,3,4,2],
-				[2,2,0,2,2]
+				"##b##",
+				"#t.t#",
+				"b.p..",
+				"#.bt#",
+				"##.##"
 			]
 			levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
 				{name: "QQQ"},
-				[0,0,2,0],
-				[1,0,2,0],
-				[0,4,3,4],
-				[2,3,0,3],
-				[0,4,3,4]
+				"..#.",
+				"p.#.",
+				".tbt",
+				"#b.b",
+				".tbt",
 			]
 			levels[4] = [
 				{name: "Continuous Corridor"},
-				[0,0,0,0,0,0,0,0,0],
-				[2,2,2,0,0,0,0,0,0],
-				[0,0,2,0,0,0,0,0,0],
-				[0,0,0,0,0,0,0,0,0],
-				[0,0,2,0,0,0,0,0,0],
-				[2,2,2,2,2,2,2,2,2]
+				".........",
+				".........",
+				".........",
+				".........",
+				".........",
+				"........."
 			]
 			levels[5] = [
 				{name: "Twisted Terrace", xOff: 3},
-				[3,0,0,0,0,0],
-				[0,2,2,0,2,2],
-				[0,2,0,4,0,2],
-				[3,3,4,1,4,3],
-				[0,2,0,4,0,2],
-				[0,2,2,0,2,2]
+				"b.....",
+				".##.##",
+				".#.t.#",
+				"bbtptb",
+				".#.t.#",
+				".##.##"
 			]
 			levels[6] = [
 				{name: "Test", xOff: 4},
-				[0,0,0,0,0,0],
-				[0,1,0,0,0,0],
-				[0,0,3,0,0,0],
-				[0,0,0,0,0,0],
-				[0,2,2,2,2,2],
-				[0,0,0,0,0,0],
-				[0,0,0,4,0,0],
-				[0,0,0,0,0,0]
+				"......",
+				".p....",
+				"..b...",
+				"......",
+				".#####",
+				"......",
+				"...t..",
+				"......"
 			]
 
 			var scale = 70;
@@ -99,19 +99,24 @@
 			const roughBox = rough.canvas(boxCanvas);
 			const boxMargin = 10;
 
+			/*const targetCanvas = document.createElement("canvas");
+			const targetCtx = wallCanvas.getContext("2d");
+			const roughTarget = rough.canvas(boxCanvas);
+			const targetMargin = 10;*/
+
 			let undoStack = [];
 
 			var mousePos = new Vector2(0,0);
 
 			const obj = {
-				EMPTY: 0,
-				PLAYER: 1,
-				WALL: 2,
-				BOX: 3,
-				TARGET: 4,
-			}
+				EMPTY: ".",
+				PLAYER: "p",
+				WALL: "#",
+				BOX: "b",
+				TARGET: "t",
+			} //all lowercase if applicable!
 
-			var level = 6;
+			var level = 0;
 
 			var levelName = "Test";
 			var levelOffsetX = 0;
@@ -247,7 +252,7 @@
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
 					ctx.font = "24px sans-serif";
 					ctx.fillStyle = "white";
-					ctx.fillText("Todo: Level Select, Puzzles, More block types, Keep under 13KB, Optimization. Deadline 13 September!",60,80)
+					ctx.fillText("Todo: Level Select, Puzzles, More block types, Keep under 13KB. Deadline 13 September!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -488,11 +493,11 @@
 			function loadLevel(number, resetStack = true) {
 				level = number;
 
-				var lvl = levels[number].slice()
-				var metadata = lvl.shift();
+				var levelToLoad = levels[number].slice()
+				var metadata = levelToLoad.shift();
 
-				gridHeight = lvl.length;
-				gridWidth = lvl[0].length;
+				gridHeight = levelToLoad.length;
+				gridWidth = levelToLoad[0].length;
 				
 				player = {x: 0, y: 0};
 				walls = [];
@@ -519,21 +524,20 @@
 
 				for(let y = 0; y < gridHeight; y++) {
 					for(let x = 0; x < gridWidth; x++) {
-						if (lvl[y][x]) {
-							switch (lvl[y][x]) {
-								case obj.PLAYER:
-									this.player = {x: x, y: y}
-									break;
-								case obj.WALL:
-									walls.push({x: x, y: y})
-									break;
-								case obj.BOX:
-									boxes.push({x: x, y: y})
-									break;
-								case obj.TARGET:
-									targets.push({x: x, y: y})
-									break;
-							}
+						var str = levelToLoad[y].substring(x,x+1).toLowerCase();
+						switch (str) {
+							case obj.PLAYER:
+								this.player = {x: x, y: y}
+								break;
+							case obj.WALL:
+								walls.push({x: x, y: y})
+								break;
+							case obj.BOX:
+								boxes.push({x: x, y: y})
+								break;
+							case obj.TARGET:
+								targets.push({x: x, y: y})
+								break;
 						}
 					}
 				}
