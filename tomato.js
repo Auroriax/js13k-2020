@@ -31,7 +31,7 @@ class Timing {
 		const newUpdate = new Date();
 
 		if (!overwrite) {
-			this.currentFrameLength = Clamp(((newUpdate - this.lastUpdate) / 1000), this.minimumFrameLength, this.maximumFrameLength);
+			this.currentFrameLength = (newUpdate - this.lastUpdate) / 1000;
 		} else {
 			this.currentFrameLength = overwrite;
 		}

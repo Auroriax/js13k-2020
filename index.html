@@ -10,36 +10,6 @@
 	<body>
 		<canvas id="canvas" width="100" height="100"> </canvas>
 		<script>
-			var scale = 70;
-			var roughSeed = 1;
-
-			const timing = new Timing((1/ 10), (1 / 30))
-
-			const canvas = document.getElementById("canvas");
-			const ctx = canvas.getContext("2d", { alpha: false });
-			const roughCanvas = rough.canvas(canvas);
-
-			const levelCanvas = document.createElement("canvas");
-			const levelCtx = levelCanvas.getContext("2d");
-			const roughLevel = rough.canvas(levelCanvas);
-
-			const wallCanvas = document.createElement("canvas");
-			const wallCtx = wallCanvas.getContext("2d");
-			const roughWall = rough.canvas(wallCanvas);
-			const wallMargin = 10;
-
-			let undoStack = [];
-
-			var mousePos = new Vector2(0,0);
-
-			const obj = {
-				EMPTY: 0,
-				PLAYER: 1,
-				WALL: 2,
-				BOX: 3,
-				TARGET: 4,
-			}
-
 			var levels = [];
 			levels[0] = [
 				{name: "QQQ"},
@@ -101,6 +71,46 @@
 				[0,0,0,4,0,0],
 				[0,0,0,0,0,0]
 			]
+
+			var scale = 70;
+			var roughSeed = 1;
+
+			const timing = new Timing((1/ 10), (1 / 60))
+
+			const canvas = document.getElementById("canvas");
+			const ctx = canvas.getContext("2d", { alpha: false });
+			const roughCanvas = rough.canvas(canvas);
+
+			const levelCanvas = document.createElement("canvas");
+			const levelCtx = levelCanvas.getContext("2d");
+			const roughLevel = rough.canvas(levelCanvas);
+
+			const wallCanvas = document.createElement("canvas");
+			const wallCtx = wallCanvas.getContext("2d");
+			const roughWall = rough.canvas(wallCanvas);
+			const wallMargin = 10;
+
+			const playerCanvas = document.createElement("canvas");
+			const PlayerCtx = wallCanvas.getContext("2d");
+			const roughPlayer = rough.canvas(playerCanvas);
+
+			const boxCanvas = document.createElement("canvas");
+			const boxCtx = wallCanvas.getContext("2d");
+			const roughBox = rough.canvas(boxCanvas);
+			const boxMargin = 10;
+
+			let undoStack = [];
+
+			var mousePos = new Vector2(0,0);
+
+			const obj = {
+				EMPTY: 0,
+				PLAYER: 1,
+				WALL: 2,
+				BOX: 3,
+				TARGET: 4,
+			}
+
 			var level = 6;
 
 			var levelName = "Test";
@@ -133,8 +143,11 @@
 
 			var steps = "";
 
-			var timeSinceLastAction = 0;
-			var timeToCompleteTween = 1000; //250; //in milliseconds
+			var timeSinceLastAction = 0; //in ms
+			var timeToCompleteTween = 150; //in ms
+
+			var timeToUpdateRenders = (1/3); //in s
+			var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
 
 			loadLevel(level);
 
@@ -144,15 +157,13 @@
 					timing.update();
 
 					timeSinceLastAction += timing.currentFrameLength;
+					timeSinceUpdatedRenders += timing.currentFrameLength;
 
 					canvas.width = canvas.clientWidth;
 					canvas.height = canvas.clientHeight;
 
 					ctx.fillStyle = "white";
 					ctx.fillRect(0,0,canvas.width, canvas.height);
-
-					//Render
-					roughSeed = Math.round(timing.timePlaying) + 1;
 
 					if (canvas.width < 500) {
 						scale = 40;
@@ -164,10 +175,34 @@
 					var verHeight = gridHeight * localScale;
 					var horWidth = gridWidth * localScale;
 
-					wallCanvas.width = localScale+wallMargin;
-					wallCanvas.height = localScale+wallMargin;
-					roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, scale, scale, {fill: "solid", strokeWidth: 1, seed: roughSeed});
+					//Render
+					if (timeSinceUpdatedRenders >= timeToUpdateRenders) {
+						//console.log("Updating renders",timeSinceUpdatedRenders)
+						timeSinceUpdatedRenders = 0;
 
+						roughSeed += 1;
+
+						//Render player
+						playerCanvas.width = localScale;
+						playerCanvas.height = localScale;
+						var size = 0.8;
+						roughPlayer.circle(localScale * .5, localScale * .5,
+							localScale * 0.8, {strokeWidth: 1, seed: roughSeed});
+
+						//Render wall
+						wallCanvas.width = localScale+wallMargin;
+						wallCanvas.height = localScale+wallMargin;
+						roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
+							scale, scale, {fill: "solid", strokeWidth: 1, seed: roughSeed});
+
+						//Render box
+						boxCanvas.width = localScale+boxMargin;
+						boxCanvas.height = localScale+boxMargin;
+						roughBox.rectangle(boxMargin * 0.5, boxMargin * 0.5, 
+							scale, scale, {fill: "dots", strokeWidth: 2, seed: roughSeed});
+					}
+
+					//Render level
 					var levelMargin = 20; //In pixels, positive
 					levelCanvas.width = horWidth+levelMargin;
 					levelCanvas.height = verHeight+levelMargin;
@@ -179,16 +214,15 @@
 					roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, 
 						horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
 
-					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, 1, roughSeed);
+					drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, roughSeed);
 					
 					var clipOffset = 10; //In pixels, positive
 					var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
 					var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
 
+					//Add a little safety padding in case the level wrapping is offset
 					if (levelOffsetX != 0) {screenWidthRatio += 1}
 					if (levelOffsetY != 0) {screenHeightRatio += 1}
-
-					//console.log("w: "+screenWidthRatio + "h: "+screenHeightRatio);
 
 					for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
 						for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
@@ -232,24 +266,9 @@
 					}
 			}, (1 / 60) * 1000);
 
-			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, lineWidth, seed) {
-
-				var off = 10;
-				var hscl = localScale * 0.5 //Half scale
-
-				//Player
-				var playerTween = tweenPlayer();
-
-				drawWrapped(player, drawPlayer);
-
-				function drawPlayer(offsetX = 0, offsetY = 0) {
-					rghCanvas.circle(PosX(playerTween.x) + hscl + offsetX, 
-						PosY(playerTween.y) + hscl + offsetY, localScale * 0.8, 
-						{strokeWidth: 1 * lineWidth, seed: seed});
-				}
+			function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, seed) {
 
 				function drawWrapped(object, drawFunction) {
-
 					drawFunction()
 
 					if (object.x == 0) {
@@ -270,27 +289,39 @@
 					}
 				}
 
+				var off = 10;
+				var hscl = localScale * 0.5 //Half scale
+
+				//Player
+				var playerTween = tweenPlayer();
+
+				function drawPlayer(offsetX = 0, offsetY = 0) {
+					levelCtx.drawImage(playerCanvas, PosX(playerTween.x) + offsetX, 
+					PosY(playerTween.y) + offsetY);
+				}
+
+				drawWrapped(player, drawPlayer);
+
 				//Boxes
-				/*for(let i = 0; i != boxes.length; i++) {
+				for(let i = 0; i != boxes.length; i++) {
 					var boxTween = tweenBox(i);
-					
-					drawWrapped(boxes[i], drawBox)
 
 					function drawBox(offsetX = 0, offsetY = 0) {
-						rghCanvas.rectangle(Math.round(PosX(boxTween.x)) + offsetX, Math.round(PosY(boxTween.y) + offsetY), 
-							localScale ,localScale, {fill: "dots", strokeWidth: 2 * lineWidth, seed: seed});
+						levelCtx.drawImage(boxCanvas, PosX(boxTween.x) - boxMargin * .5 + offsetX, 
+							PosY(boxTween.y) - boxMargin * 0.5 + offsetY);
 					}
-
-				}*/
+					
+					drawWrapped(boxes[i], drawBox)
+				}
 
 				//Target
 				for(let i = 0; i != targets.length; i++) {
-					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1 * lineWidth, seed: seed});
+					rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1, seed: seed});
 				}
 
 				//Walls
 				for(let i = 0; i != walls.length; i++) {
-					var even = (walls[i].x + walls[i].y);
+					//var even = (walls[i].x + walls[i].y);
 					levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
 				}
 
@@ -317,11 +348,13 @@
 				}
 
 				function tweenObject(current, source) {
-					if (timeSinceLastAction < timeToCompleteTween) {
+					var percent = 1-Clamp((timeSinceLastAction / timeToCompleteTween) * 1000, 0, 1)
+
+					if (percent != 0) {
 						var diffX = Math.round(current.x - source.x);
 						var diffY = Math.round(current.y - source.y);
 
-						console.log("Before: x:"+diffX + "y: "+diffY)
+						//console.log("Before: x:"+diffX + "y: "+diffY)
 						if (diffX != 0 && diffY != 0) {
 							if (Math.abs(diffX) >= Math.abs(diffY)) {
 								diffX -= Math.sign(diffX) * gridWidth;
@@ -338,7 +371,12 @@
 
 						//console.log("x: "+diffX + " y: "+diffY)
 
-						var percent = 1-Clamp((timeSinceLastAction / timeToCompleteTween) * 1000, 0, 1)
+						percent = Tween(percent);
+
+						function Tween(t) {
+							return(t*(2-t));
+						}
+
 						return ({x: current.x - (diffX * percent), y: current.y - (diffY * percent)});
 					} else {
 						return({x: current.x, y: current.y});
