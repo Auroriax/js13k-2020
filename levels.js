@@ -1,10 +1,13 @@
 var levels = [];
 levels[0] = [
-    {name: "Tumbling Tetronimos"}, //Should change into a tutorial puzzle of sorts
-    "##..",
-    ".bp.",
-    ".#..",
-    "...4",
+    {name: "Tumbling Tetronimos"}, //Hey, it's a normal Sokoban puzzle!
+    "#######",
+    "#.p...#",
+    "#.t#b.#",
+    "#..#..#",
+    "#.b#t.#",
+    "#.....#",
+    "#######"
 ]
 levels[1] = [
     {name: "Diabolical DNA"}, //Needs to be harder
@@ -17,9 +20,9 @@ levels[1] = [
 levels[2] = [
     {name: "Glass Hallway"}, //Too easy to be interesting
     "##b##",
-    "#t.t#",
-    "b.p..",
-    "#.bt#",
+    "#.t.#",
+    "b.b..",
+    "#tpt#",
     "##.##"
 ]
 levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
@@ -31,16 +34,16 @@ levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
     ".tbt",
 ]
 levels[4] = [
-    {name: "Continuous Corridor", xOff: 3}, //Barely a sample at the moment, but could be interesting to explore
-    "#########",
-    ".........",
-    ".........",
-    "p########",
-    ".........",
-    "........."
+    {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
+    "#######",
+    "t....p.",
+    "t..b.b.",
+    ".######",
+    "t#.b.b.",
+    "t.....#"
 ]
 levels[5] = [
-    {name: "Twisted Terrace", xOff: 3}, //Almost solveable, need to make a minor change for it to work
+    {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b.....",
     ".##.##",
     ".#.t.#",
@@ -49,10 +52,11 @@ levels[5] = [
     ".##.##"
 ]
 levels[6] = [
-    {name: "Uncornered", yOff: 1},
-    "######",
-    ".p.t..",
-    "......",
+    {name: "Uncornered", yOff: 1}, //dldddrrrrrllllluuurulll (23)
+    ".p....",
+    ".#.t..",
+    ".####.",
+    ".#....",
     "...b..",
     "######",
 ]
@@ -64,4 +68,8 @@ levels[7] = [
     "bttt.",
 ]
 
-var level = 7;
+var level = 0;
+
+/*
+
+*/

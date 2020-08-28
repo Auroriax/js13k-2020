@@ -189,7 +189,7 @@
 					roughCanvas.rectangle(50,50,canvas.width - 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
 					ctx.font = "24px sans-serif";
 					ctx.fillStyle = "white";
-					ctx.fillText("Todo: Level Select, Puzzles, More block types, Keep under 13KB. Deadline 13 September!",60,80)
+					ctx.fillText("Todo: Level Select, Puzzles, Settings, Minification. Deadline 13 September!",60,80)
 				}
 				catch (e) {
 						console.error("Whoops! Something went wrong and the game crashed. The cause:", e)
@@ -223,7 +223,6 @@
 					
 					if (object.y == 0) {
 						var wrapX = ((object.x + levelOffsetX + gridWidth) % gridWidth) - object.x;
-						//console.log("wrapX"+wrapX);
 						drawFunction(wrapX * localScale, gridHeight * localScale)
 					} else if (object.y == gridHeight-1) {
 						var wrapX = ((object.x - levelOffsetX + gridWidth) % gridWidth) - object.x;
@@ -442,9 +441,9 @@
 				targets = [];
 
 				if (metadata.name) {
-					levelName = metadata.name;
+					levelName = (level+1).toString() + ": "+ metadata.name;
 				} else {
-					levelName = "";
+					levelName = (level+1).toString();
 				}
 
 				if (metadata.xOff) {
