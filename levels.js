@@ -1,39 +1,47 @@
 var levels = [];
-levels[0] = [
-    {name: "Tumbling Tetronimos"}, //Hey, it's a normal Sokoban puzzle!
+levels.push([
+    {name: "Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
     "#######",
-    "#.p...#",
-    "#.t#b.#",
-    "#..#..#",
-    "#.b#t.#",
-    "#.....#",
-    "#######"
-]
-levels[1] = [
-    {name: "Diabolical DNA"}, //Needs to be harder
-    "..#..",
-    "..tb.",
-    ".#.#.",
-    ".bt..",
-    "..#.."
-]
-levels[2] = [
+    "####..#",
+    "......#",
+    "..###.#",
+    ".b#t.p.",
+    "..#####",
+])
+levels.push([
     {name: "Glass Hallway"}, //Too easy to be interesting
     "##b##",
     "#.t.#",
     "b.b..",
     "#tpt#",
     "##.##"
-]
-levels[3] = [ //Decent easy level, rdddlldddlruuuulldrllddru (25)
+])
+/*levels.push([
+    {name: "Diabolical DNA"}, //Needs to be harder
+    "..#..",
+    "b.t##",
+    "p#.#.",
+    "##t.b",
+    "..#.."
+])*/
+levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
     {name: "Infinite Inlet"},
     "..#.",
     "p.#.",
     ".tbt",
     "#b.b",
     ".tbt",
-]
-levels[4] = [
+])
+levels.push([
+    {name: "Wrap Around The Block", yOff: 2},
+    "....",
+    "####",
+    "...b",
+    "####",
+    ".t#p",
+    "####"
+])
+levels.push([
     {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
     "#######",
     "t....p.",
@@ -41,8 +49,8 @@ levels[4] = [
     ".######",
     "t#.b.b.",
     "t.....#"
-]
-levels[5] = [
+])
+levels.push([
     {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b.....",
     ".##.##",
@@ -50,8 +58,8 @@ levels[5] = [
     "bbtptb",
     ".#.t.#",
     ".##.##"
-]
-levels[6] = [
+])
+/*levels.push([
     {name: "Uncornered", yOff: 1}, //dldddrrrrrllllluuurulll (23)
     ".p....",
     ".#.t..",
@@ -59,17 +67,40 @@ levels[6] = [
     ".#....",
     "...b..",
     "######",
-]
-levels[7] = [
+])
+levels.push([
     {name: "Box of Memories", yOff: 1}, //lrluuddurudrudrdrldrulululllldduulrddduuruluurdldulllldluuurul (62). Lots of busywork and very easy if you know the initial trick
     "bbbbb",
     "bttt.",
     "btpt.",
     "bttt.",
-]
+])*/
 
 var level = 0;
 
 /*
+levels[0] = [
+    {name: "Tumbling Tetronimos"}, //Hey, it's a normal Sokoban puzzle!
+    "####..#",
+    "#.....#",
+    "#..##.#",
+    "#..##.#",
+    "pb.##.#",
+    "#..##t#",
+    "#######"
+]
 
+levels[2] = [
+    {name: "Diabolical DNA", yOff: 2}, //Needs to be harder
+    ".t..",
+    "tbt.",
+    "bbbt"
+]
+
+levels[2] = [
+    {name: "Diabolical DNA", yOff: 1}, //Needs to be harder
+    "btb",
+    "tpt",
+    "btb"
+]
 */
