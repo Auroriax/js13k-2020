@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+</head>
+ManualLinter - Tom Hermans<br>
+Manual Linter brings all your assets (html, css, and js) into one html file, and throws a few optimizations in the mix as well. Enjoy your smaller file size!
+<br>
+<div>
+    HTML<br>
+    <textarea id="html" rows="5" cols="200" placeholder="Paste HTML here"></textarea>
+</div>
+<br>
+<div>
+    CSS (remove most spaces, newlines, and comments). Will replace any stylesheet links with embedded css in style tags<br>
+    <textarea id="css_name" rows="1" cols="200" placeholder="Filename of core CSS file here">style.css</textarea><br>
+    <textarea id="css" rows="5" cols="200" placeholder="Paste CSS here"></textarea>
+</div>
+<br>
+<div>
+    Javascript (only up to three files at the moment, sorry! The minifier is also pretty strict at the moment, turn it off if you're having issues with it.)<br>
+    <textarea id="js_name_1" rows="1" cols="200" placeholder="Filename of core JS file here">tomato.js</textarea><br>
+    <textarea id="js_1" rows="5" cols="200" placeholder="Paste JS here"></textarea>
+</div><br>
+<div>
+    <textarea id="js_name_2" rows="1" cols="200" placeholder="Filename of another JS file here">rough.js</textarea> <br>
+    <textarea id="js_2" rows="5" cols="200" placeholder="Paste JS here"></textarea>
+</div><br>
+<div>
+    <textarea id="js_name_3" rows="1" cols="200" placeholder="Filename of yet another JS file here">levels.js</textarea> <br>
+    <textarea id="js_3" rows="5" cols="200" placeholder="Paste JS here"></textarea>
+</div><br>
+<div>
+    <textarea id="js_name_4" rows="1" cols="200" placeholder="Filename of a final JS file here">game.js</textarea> <br>
+    <textarea id="js_4" rows="5" cols="200" placeholder="Paste JS here"></textarea>
+</div>
+<button onclick="lint()" type="button"><b>Minify & lint all</b></button><br> <br>
+Output <div id="stats"></div><br>
+<textarea id="output" rows="5" cols="200" placeholder="All your code inside one HTML file"></textarea>
+
+<script>
+
+inited = false;
+
+document.addEventListener("DOMContentLoaded", HtmlLoaded);
+
+function HtmlLoaded() {
+    html = document.getElementById("html");
+    css_name = document.getElementById("css_name");
+    css = document.getElementById("css");
+    js_name_1 = document.getElementById("js_name_1");
+    js_1 = document.getElementById("js_1");
+    js_name_2 = document.getElementById("js_name_2");
+    js_2 = document.getElementById("js_2");
+    js_name_3 = document.getElementById("js_name_3");
+    js_3 = document.getElementById("js_3");
+    js_name_4 = document.getElementById("js_name_4");
+    js_4 = document.getElementById("js_4");
+    output = document.getElementById("output");
+    stats = document.getElementById("stats");
+
+    inited = true;
+};
+
+function lint() {
+    if (inited == false) {stats.innerHTML = "Not initialized yet, please wait a bit longer"; return;}
+
+    var htmlmin = striphtml(html.value); 
+    var chars = html.value.length + css.value.length + js_1.value.length + js_2.value.length + js_3.value.length + js_4.value.length;
+    htmlmin.replace(/(<!--[^]+?->|\s)+/g," ").replace(/ (?=<|$)|<\/[tl].>|<.p> *(<[p/])| ?\/?(>)/gi,"$1$2");
+
+    var cssmin = stripcss(css.value);
+    var js1 = stripjs(js_1.value);
+    var js2 = stripjs(js_2.value);
+    var js3 = stripjs(js_3.value);
+    var js4 = stripjs(js_4.value);
+    
+    htmlmin = htmlmin.replace('<link rel="stylesheet" href="'+css_name.value+'">',"\n<style>"+cssmin+"</style>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_1.value+'"></script>',"\n<script>"+js1+"</script>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_2.value+'"></script>',"\n<script>"+js2+"</script>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_3.value+'"></script>',"\n<script>"+js3+"</script>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_4.value+'"></script>',"\n<script>"+js4+"</script>\n");
+    
+    output.value = htmlmin
+
+    percent = (((chars - htmlmin.length) / chars) * 100).toFixed(2);
+    stats.innerHTML = "Went from "+chars.toString()+" characters down to "+htmlmin.length.toString()+", a save of "+percent.toString()+"%";
+}
+
+function striphtml(string) {
+    var temp = string;
+ 
+    temp = temp.replace(/(\r\n|\n|\r)/gm, ""); //Remove newlines
+    temp = temp.replace(/    /g,"") //Remove spaces
+    temp = temp.replace(/\t/g, ''); //Remove tabs
+
+    return(temp)
+}
+
+function stripcss(string) {
+    var temp = string;
+ 
+    temp = temp.replace(/(\r\n|\n|\r)/gm, ""); //Remove newlines
+    temp = temp.replace(/  /g,"") //Remove spaces
+    temp = temp.replace(/\/\*[\s\S]*?\*\/|([^\\:]|^)\/\/.*$/gm, '$1'); //Remove comments
+    temp = temp.replace(/\t/g, ''); //Remove tabs
+
+    return(temp);
+}
+
+function stripjs(string) {
+    var temp = string;
+ 
+    temp = temp.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/gm, '$1'); //Remove comments
+    temp = temp.replace(/(\r\n|\n|\r)/gm, " "); //Remove newlines
+    temp = temp.replace(/  /g, ''); //Remove spaces
+    temp = temp.replace(/\t/g, ''); //Remove tabs
+
+    return(temp);
+}
+
+</script>

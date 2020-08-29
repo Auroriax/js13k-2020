@@ -1,13 +1,13 @@
 var levels = [];
 levels.push([
-    {name: "Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
-    "#######",
-    "####..#",
+    {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
+    "#####.#",
     "......#",
-    "..###.#",
+    "...#..#",
+    "#.###.#",
     ".b#t.p.",
-    "..#####",
-])
+    "..###.#",
+]);
 levels.push([
     {name: "Glass Hallway"}, //Too easy to be interesting
     "##b##",
@@ -15,7 +15,7 @@ levels.push([
     "b.b..",
     "#tpt#",
     "##.##"
-])
+]);
 /*levels.push([
     {name: "Diabolical DNA"}, //Needs to be harder
     "..#..",
@@ -31,16 +31,25 @@ levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
     ".tbt",
     "#b.b",
     ".tbt",
-])
+]);
 levels.push([
-    {name: "Wrap Around The Block", yOff: 2},
+    {name: "Girded Grid"}, //uurruullllddrrudrruullddlluuuuudrrddrruuudrrddlruurrddl ( ~50)
+    ".#.#.#",
+    "t.b.t.",
+    ".#.#.#",
+    "b.p.b.",
+    ".#.#.#",
+    "t.b.t."
+]);
+levels.push([
+    {name: "Wrap Around The Block", yOff: 2}, //Wrap offset introduction puzzle
     "....",
     "####",
     "...b",
     "####",
     ".t#p",
     "####"
-])
+]);
 levels.push([
     {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
     "#######",
@@ -49,7 +58,7 @@ levels.push([
     ".######",
     "t#.b.b.",
     "t.....#"
-])
+]);
 levels.push([
     {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b.....",
@@ -58,7 +67,11 @@ levels.push([
     "bbtptb",
     ".#.t.#",
     ".##.##"
-])
+]);
+
+var level = 0;
+
+//VIABLE
 /*levels.push([
     {name: "Uncornered", yOff: 1}, //dldddrrrrrllllluuurulll (23)
     ".p....",
@@ -76,8 +89,7 @@ levels.push([
     "bttt.",
 ])*/
 
-var level = 0;
-
+//DISCARDED
 /*
 levels[0] = [
     {name: "Tumbling Tetronimos"}, //Hey, it's a normal Sokoban puzzle!

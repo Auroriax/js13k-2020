@@ -1,7 +1,7 @@
-///TOMATO
+//TOMATO
 
-///TIMING
-class Time {
+//TIMING
+/*class Time {
 	constructor(seconds) {
 		this.seconds = seconds;
 	}
@@ -14,7 +14,7 @@ class Time {
 	set minutes(t) {this.seconds = t / 60 }
 	get milliSeconds() {return (this.seconds * 0.001);}
 	set milliSeconds(t) {this.seconds = t * 1000}
-}
+}*/
 
 class Timing {
 	constructor(minimumFrameLength, maximumFrameLength) {
@@ -57,7 +57,7 @@ class Vector2 {
 		this.y = y;
 	}
 
-	/** Returns a new Vector2 with the x and y axis swapped around. */
+	//Returns a new Vector2 with the x and y axis swapped around.
 	swap() {return new Vector2(this.y, this.x)}
 }
 
@@ -68,7 +68,7 @@ class Hitbox {
 		this.height = height;
 	}
 
-	/** Render this hitbox for debugging purposes. If the point falls in the hitbox, change appearance. */
+	//Render this hitbox for debugging purposes. If the point falls in the hitbox, change appearance.
 	render(ctx, point = null) {
 		ctx.beginPath();
 
@@ -84,7 +84,7 @@ class Hitbox {
 	}
 }
 
-/** A square hitbox with the origin in the center. */
+//A square hitbox with the origin in the center.
 function HitboxSquare(xOffset, yOffset, size) {
 	return new Hitbox(xOffset, yOffset, size, size, size, size);
 }
@@ -95,7 +95,7 @@ function PointInRectangle(point, hitbox) {
 }
 
 ///INPUT
-class InputHandler {
+/*class InputHandler {
 	constructor(positiveKeys, negativeKeys = null, timer = null, timeForRefiring = 0) {
 		this.delta = 0;
 		this.posKeysHeld = [];
@@ -173,7 +173,7 @@ class InputHandler {
 			}
 		}
 	}
-}
+}*/
 
 
 ///MISC
