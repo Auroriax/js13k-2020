@@ -74,6 +74,8 @@ var boxes = [];
 var targets = [];
 
 var steps = "";
+var prevHorDelta = 0;
+var prevVerDelta = 0;
 
 var timeSinceLastAction = 0; //in s
 var timeToCompleteTween = 0.1; //in s
@@ -83,7 +85,7 @@ var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
 
 loadLevel(level);
 
-var gameLoop = setInterval(() => {
+function gameLoop() {
     try {
         //Init
         timing.update();
@@ -147,8 +149,8 @@ var gameLoop = setInterval(() => {
         levelCanvas.width = horWidth+levelMargin;
         levelCanvas.height = verHeight+levelMargin;
 
-        var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX;
-        var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY;
+        var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX * 0.25;
+        var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY * 0.25;
 
         var reduceCamShake = 2;
         if (camShakeX > 0) {camShakeX = Math.max(0, camShakeX - reduceCamShake)}
@@ -160,7 +162,7 @@ var gameLoop = setInterval(() => {
         //console.log("cx: "+camShakeX + " cy: "+camShakeY)
 
         const borderOffset = 5;
-        roughCanvas.rectangle(cameraX-borderOffset, cameraY-borderOffset, 
+        roughCanvas.rectangle(cameraX-borderOffset + camShakeX, cameraY-borderOffset + camShakeY, 
             horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
 
         drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, roughSeed);
@@ -188,7 +190,7 @@ var gameLoop = setInterval(() => {
         }
 
         ctx.globalAlpha = 1;
-        ctx.drawImage(levelCanvas, cameraX, cameraY);
+        ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
 
         //Draw level name
         drawStroked(levelName, 40, canvas.height - 40);
@@ -212,24 +214,28 @@ var gameLoop = setInterval(() => {
 
         //QQQ
         roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
-        ctx.fillText("[Todo: Level Select, Puzzles, Settings, Minification. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+        ctx.fillText("[Todo: Level Select, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+    
+        window.requestAnimationFrame(gameLoop);
     }
     catch (e) {
-            console.error("Whoops! Something went wrong and the game crashed. The cause:", e);
-            console.log("Here's some extra info to help resolve the issue. (It might contain some personal information.)");
-            console.log("Your user agent is:",navigator.userAgent);
-            console.log("Are your cookies enabled?",navigator.cookieEnabled);
-            console.log("Are you online?",navigator.onLine);
-            console.log("The language your browser is set to:",navigator.language);
-            
-            const canvas = document.getElementById("canvas");
-            if (canvas) {
-                console.log("Size of the canvas:",{width: canvas.width, height: canvas.height})
-            }
-
-            clearInterval(gameLoop);
+        console.error("Whoops! Something went wrong and the game crashed. The cause:", e);
+        console.log("Here's some extra info to help resolve the issue. (It might contain some personal information.)");
+        console.log("Your user agent is:",navigator.userAgent);
+        console.log("Are your cookies enabled?",navigator.cookieEnabled);
+        console.log("Are you online?",navigator.onLine);
+        console.log("The language your browser is set to:",navigator.language);
+        
+        const canvas = document.getElementById("canvas");
+        if (canvas) {
+            console.log("Size of the canvas:",{width: canvas.width, height: canvas.height})
         }
-}, (1 / 60) * 1000);
+
+        clearInterval(gameLoop);
+    }
+};
+
+window.requestAnimationFrame(gameLoop);
 
 function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, seed) {
 
@@ -322,7 +328,7 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 
             //console.log("Before: x:"+diffX + "y: "+diffY)
             if (diffX != 0 && diffY != 0) {
-                if (Math.abs(diffX) - levelOffsetX != 0) { //Does not resolve correctly 100% of the time
+                if (prevHorDelta != 0) { //Does not resolve correctly 100% of the time
                     diffX -= Math.sign(diffX) * gridWidth;
                     diffY = 0;
                 } else {
@@ -359,8 +365,8 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 }
 
 function input(key) {
-
     if (key == "r") {
+        undoStack.push({player: player, boxes: boxes.slice()});
         loadLevel(level, false);
         return;
     } else if (key == "+") {
@@ -434,6 +440,9 @@ function input(key) {
     if (movementResolved) {
         steps += dir;
         timeSinceLastAction = 0;
+
+        prevHorDelta = horDelta;
+        prevVerDelta = verDelta;
 
         //Check if won
         var victory = true;
