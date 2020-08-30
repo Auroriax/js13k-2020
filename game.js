@@ -43,6 +43,7 @@ const obj = {
     WALL: "#",
     BOX: "b",
     TARGET: "t",
+    LEVELNODE: "l",
 }; //all lowercase if applicable!
 
 var levelName = "Test";
@@ -72,6 +73,7 @@ var player = {x: 0, y: 0};
 var walls = [];
 var boxes = [];
 var targets = [];
+var levelNodes = [];
 
 var steps = "";
 var prevHorDelta = 0;
@@ -82,6 +84,13 @@ var timeToCompleteTween = 0.1; //in s
 
 var timeToUpdateRenders = (1/3); //in s
 var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
+
+var menuOpened = false;
+
+var levelSolved = [];
+for(var i = 0; i != levels.length; i += 1) {
+    levelSolved[i] = false; //QQQ
+}
 
 loadLevel(level);
 
@@ -162,7 +171,7 @@ function gameLoop() {
         //console.log("cx: "+camShakeX + " cy: "+camShakeY)
 
         const borderOffset = 5;
-        roughCanvas.rectangle(cameraX-borderOffset + camShakeX, cameraY-borderOffset + camShakeY, 
+        roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
             horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
 
         drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, roughSeed);
@@ -200,21 +209,31 @@ function gameLoop() {
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        //Menu
-        roughCanvas.rectangle(-5, -5, 85, 85, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
-        ctx.fillText("[Esc]",50,60);
+        if (!menuOpened) {
+            //Menu
+            roughCanvas.rectangle(-5, -5, 85, 85, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+            ctx.fillText("[Esc]",50,60);
 
-        //Reset
-        roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
-        ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
+            //Reset
+            roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+            ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
 
-        //Undo
-        roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2) + 10})
-        ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
+            //Undo
+            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2) + 10})
+            ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
 
-        //QQQ
-        roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
-        ctx.fillText("[Todo: Level Select, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            //QQQ
+            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
+            ctx.fillText("[Todo: Level Select, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+        } else {
+            //Menu bg
+            ctx.globalAlpha = 0.2;
+            ctx.fillStyle = "black";
+            ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
+
+            ctx.globalAlpha = 1;
+            roughCanvas.rectangle(-5, -5, 405, 305, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+        }
     
         window.requestAnimationFrame(gameLoop);
     }
@@ -267,8 +286,8 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
     var playerTween = tweenPlayer();
 
     function drawPlayer(offsetX = 0, offsetY = 0) {
-        levelCtx.drawImage(playerCanvas, PosX(playerTween.x) + offsetX, 
-        PosY(playerTween.y) + offsetY);
+        levelCtx.drawImage(playerCanvas, PosX(playerTween.x) + offsetX + camShakeX, 
+        PosY(playerTween.y) + offsetY + camShakeY);
     }
 
     drawWrapped(player, drawPlayer);
@@ -295,6 +314,22 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
     for(let i = 0; i != walls.length; i++) {
         //var even = (walls[i].x + walls[i].y);
         levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
+    }
+
+    //LevelNode
+    for(let i = 0; i != levelNodes.length; i++) {
+        levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
+        levelCtx.font = Math.round(0.8 * scale)+"px sans-serif";
+        levelCtx.textAlign = "center";
+        levelCtx.textBaseline = "middle";
+        //drawStroked()
+        levelCtx.fillText(levelNodes[i].target.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
+        
+        if (levelSolved[i+1]) {
+            levelCtx.font = Math.round(0.4 * scale)+"px sans-serif";
+            levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
+        }
+        //rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1, seed: seed});
     }
 
     function tweenPlayer() {
@@ -365,100 +400,124 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 }
 
 function input(key) {
-    if (key == "r") {
-        undoStack.push({player: player, boxes: boxes.slice()});
-        loadLevel(level, false);
-        return;
-    } else if (key == "+") {
-        loadLevel(Math.min(level + 1, levels.length-1 ));
-        return;
-    } else if (key == "-") {
-        loadLevel(Math.max(level - 1, 0 ));
-        return;
-    } else if (key == "z") {
-        if (undoStack.length != 0) {
-            var stateToRestore = undoStack.pop();
 
-            player = stateToRestore.player;
-            boxes = stateToRestore.boxes;
-
-            steps = steps.slice(0, -1);
-
-            console.warn("Popped the undo stack, remaining entries:", undoStack.length);
+    if (key == "Escape") {
+        if (level == 0) {
+            menuOpened = !menuOpened;
+        } else {
+            loadLevel(0);
         }
         return;
     }
 
-    var dir = "";
+    if (!menuOpened) {
+        if (key == "r") {
+            undoStack.push({player: player, boxes: boxes.slice()});
+            loadLevel(level, false);
+            return;
+        } else if (key == "+") {
+            loadLevel(Math.min(level + 1, levels.length-1 ));
+            return;
+        } else if (key == "-") {
+            loadLevel(Math.max(level - 1, 0 ));
+            return;
+        } else if (key == "z") {
+            if (undoStack.length != 0) {
+                var stateToRestore = undoStack.pop();
 
-    var horDelta = 0; 
-    if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1; dir = "l"}
-    if (key == "ArrowRight" || key == "d") {horDelta = 1; dir = "r"}
+                player = stateToRestore.player;
+                boxes = stateToRestore.boxes;
 
-    var verDelta = 0;
-    if (key == "ArrowDown" || key == "s") {verDelta = 1; dir = "d"}
-    if (key == "ArrowUp" || key == "w") {verDelta = -1; dir = "u"}
+                steps = steps.slice(0, -1);
 
-    console.log("------");
+                console.warn("Popped the undo stack, remaining entries:", undoStack.length);
+            }
+            return;
+        } else if (key == " " || key == "x" || key == "Enter") {
+            if (levelNodes.length != 0) {
+                for(let i = 0; i != levelNodes.length; i++) {
+                    var node = levelNodes[i];
+                    if (node.x == player.x && node.y == player.y) {
+                        loadLevel(node.target); break;
+                    }
+                }
+            }
+        }
 
-    if (horDelta != 0 || verDelta != 0) {
-        undoStack.push({player: player, boxes: boxes.slice()}); //Other objects can't move, so aren't stored.
+        var dir = "";
 
-        var movementResolved = false;
+        var horDelta = 0; 
+        if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1; dir = "l"}
+        if (key == "ArrowRight" || key == "d") {horDelta = 1; dir = "r"}
 
-        var target = wrapCoords(player.x + horDelta, player.y + verDelta);
-        var targetX = target.x;
-        var targetY = target.y;
+        var verDelta = 0;
+        if (key == "ArrowDown" || key == "s") {verDelta = 1; dir = "d"}
+        if (key == "ArrowUp" || key == "w") {verDelta = -1; dir = "u"}
 
-        console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
+        console.log("------");
 
-        let foundBox = hasBox(targetX, targetY);
-        console.log("fb: "+foundBox);
-        if (foundBox !== null) {
-            var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
-            let boxTargetX = boxTarget.x;
-            let boxTargetY = boxTarget.y;
+        if (horDelta != 0 || verDelta != 0) {
+            undoStack.push({player: player, boxes: boxes.slice()}); //Other objects can't move, so aren't stored.
 
-            //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
-            //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
-            if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null) {
-                boxes[foundBox] = {x: boxTargetX, y: boxTargetY};
+            var movementResolved = false;
+
+            var target = wrapCoords(player.x + horDelta, player.y + verDelta);
+            var targetX = target.x;
+            var targetY = target.y;
+
+            console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
+
+            let foundBox = hasBox(targetX, targetY);
+            console.log("fb: "+foundBox);
+            if (foundBox !== null) {
+                var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
+                let boxTargetX = boxTarget.x;
+                let boxTargetY = boxTarget.y;
+
+                //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
+                //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
+                if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null) {
+                    boxes[foundBox] = {x: boxTargetX, y: boxTargetY};
+                    player = {x: targetX, y: targetY};
+                    movementResolved = true;
+                } else {
+                    console.log("Movement not resolved","Could not push box");
+                }
+            }
+            else if (hasWall(targetX, targetY) === null) {
                 player = {x: targetX, y: targetY};
                 movementResolved = true;
             } else {
-                console.log("Movement not resolved","Could not push box");
+                console.log("Movement not resolved","Something was in the way");
             }
         }
-        else if (hasWall(targetX, targetY) === null) {
-            player = {x: targetX, y: targetY};
-            movementResolved = true;
+
+        if (movementResolved) {
+            steps += dir;
+            timeSinceLastAction = 0;
+
+            prevHorDelta = horDelta;
+            prevVerDelta = verDelta;
+
+            //Check if won
+            var victory = true;
+            for(let i = 0; i != targets.length; i++) {
+                if (hasBox(targets[i].x, targets[i].y) === null) {
+                    victory = false; break;
+                }
+            }
+
+            if (victory) {
+                console.warn("Victory!",steps + " (" + steps.length + ")");
+                levelSolved[level] = true;
+            }
         } else {
-            console.log("Movement not resolved","Something was in the way");
+            camShakeX = horDelta * 12;
+            camShakeY = verDelta * 12;
+            undoStack.pop(); //Nothing changed, so discard Undo state.
         }
-    }
+    } else { //Menu input
 
-    if (movementResolved) {
-        steps += dir;
-        timeSinceLastAction = 0;
-
-        prevHorDelta = horDelta;
-        prevVerDelta = verDelta;
-
-        //Check if won
-        var victory = true;
-        for(let i = 0; i != targets.length; i++) {
-            if (hasBox(targets[i].x, targets[i].y) === null) {
-                victory = false; break;
-            }
-        }
-
-        if (victory) {
-            console.warn("Victory!",steps + " (" + steps.length + ")");
-        }
-    } else {
-        camShakeX = horDelta * 12;
-        camShakeY = verDelta * 12;
-        undoStack.pop(); //Nothing changed, so discard Undo state.
     }
 }
 
@@ -475,12 +534,17 @@ function loadLevel(number, resetStack = true) {
     walls = [];
     boxes = [];
     targets = [];
+    levelNodes = [];
 
     if (metadata.name) {
-        levelName = (level+1).toString() + ": "+ metadata.name;
+        levelName = (level) + ": "+ metadata.name;
     } else {
-        levelName = (level+1).toString();
+        levelName = "";
     }
+
+    /*if (levelSolved[level]) {
+        levelName += " ✓";
+    }*/
 
     if (metadata.xOff) {
         levelOffsetX = metadata.xOff;
@@ -509,6 +573,9 @@ function loadLevel(number, resetStack = true) {
                     break;
                 case obj.TARGET:
                     targets.push({x: x, y: y});
+                    break;
+                case obj.LEVELNODE:
+                    levelNodes.push({x: x, y: y, target: levelNodes.length+1});
                     break;
             }
         }

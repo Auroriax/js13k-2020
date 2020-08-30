@@ -1,5 +1,14 @@
 var levels = [];
 levels.push([
+    {}, //Level select
+    "########",
+    "l.l.l.l.",
+    "...p....",
+    "........",
+    "l.l.l.l.",
+    "########",
+]);
+levels.push([
     {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
     "#####.#",
     "......#",
@@ -67,6 +76,15 @@ levels.push([
     "bbtptb",
     ".#.t.#",
     ".##.##"
+]);
+levels.push([
+    {name: "Fixing tweening bugs", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    "b......",
+    ".##.##",
+    ".#.t.#",
+    "bbtptb",
+    ".#.t.#",
+    "......"
 ]);
 
 var level = 0;
