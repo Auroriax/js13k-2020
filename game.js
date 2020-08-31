@@ -28,7 +28,7 @@ const boxMargin = 10;
 const targetCanvas = document.createElement("canvas");
 const targetCtx = wallCanvas.getContext("2d");
 const roughTarget = rough.canvas(targetCanvas);
-const targetMargin = 10;
+const targetMargin = 15;
 
 let undoStack = [];
 
@@ -85,7 +85,24 @@ var timeToCompleteTween = 0.1; //in s
 var timeToUpdateRenders = (1/3); //in s
 var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
 
+var timeUntilLevelEnd = 5 //in s;
+var timeUntilLevelSelected = 1;
+var timeSinceLevelWon = timeUntilLevelEnd;
+
+var timeSinceLevelStart = 0;
+var timeToLoadLevel = 1; //in s;
+
 var menuOpened = false;
+var menuSelection = 0;
+
+var lineWobble = true;
+var colors = [];
+colors[0] = ["Sketchbook", "white", "black", "gray"]; //name, bg, main, contrast
+colors[1] = ["Scratchpad", "#222", "white", "gray"];
+var colorTheme = 0;
+
+var victory = false;
+var targetLevel = 0;
 
 var levelSolved = [];
 for(var i = 0; i != levels.length; i += 1) {
@@ -101,57 +118,76 @@ function gameLoop() {
 
         timeSinceLastAction += timing.currentFrameLength;
         timeSinceUpdatedRenders += timing.currentFrameLength;
+        timeSinceLevelStart += timing.currentFrameLength;
+        timeSinceLevelWon += timing.currentFrameLength;
 
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
-        ctx.fillStyle = "white";
+        ctx.fillStyle = colors[colorTheme][1];
         ctx.fillRect(0,0,canvas.width, canvas.height);
 
-        if (canvas.width < 500) {
+        if (canvas.width < 700) {
             scale = 40;
         } else {
             scale = 70;
         }
 
+        var alph = 1;
         var localScale = scale;
+        if (timeSinceLevelStart < timeToLoadLevel) {
+            alph = timeSinceLevelStart / timeToLoadLevel;
+            localScale = (scale + 20) - 20 * EaseInOut(timeSinceLevelStart / timeToLoadLevel);
+        } else if (timeSinceLevelWon < timeUntilLevelEnd && level != 0) {
+            alph = 1 - (timeSinceLevelWon / timeUntilLevelEnd);
+            localScale = (scale - 50) + 50 * (1-EaseInOut(timeSinceLevelWon / timeUntilLevelEnd));
+        } else if (timeSinceLevelWon < timeUntilLevelSelected && level == 0) {
+            alph = 1 - (timeSinceLevelWon / timeUntilLevelSelected);
+            localScale = (scale) - 20 * (EaseInOut(timeSinceLevelWon / timeUntilLevelSelected));
+        } else if (((timeSinceLevelWon >= timeUntilLevelEnd && level != 0) || (timeSinceLevelWon >= timeUntilLevelSelected && level == 0)) && victory) {
+            loadLevel(targetLevel);
+            alph = 0;
+        }
+
+        //console.log(alph);
+
         var verHeight = gridHeight * localScale;
         var horWidth = gridWidth * localScale;
 
         //Render
         if (timeSinceUpdatedRenders >= timeToUpdateRenders) {
-            //console.log("Updating renders",timeSinceUpdatedRenders)
+            if (lineWobble) {
+                roughSeed += 1;
+            }
             timeSinceUpdatedRenders = 0;
-
-            roughSeed += 1;
-
-            //Render player
-            playerCanvas.width = localScale;
-            playerCanvas.height = localScale;
-            var size = 0.8;
-            roughPlayer.circle(localScale * .5, localScale * .5,
-                localScale * size, {strokeWidth: 1, seed: roughSeed});
-
-            //Render wall
-            wallCanvas.width = localScale+wallMargin;
-            wallCanvas.height = localScale+wallMargin;
-            roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
-                scale, scale, {fill: "solid", strokeWidth: 1, seed: roughSeed});
-
-            //Render box
-            boxCanvas.width = localScale+boxMargin;
-            boxCanvas.height = localScale+boxMargin;
-            var size = 0.8;
-            roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
-                scale * size, scale * size, {fill: "dots", strokeWidth: 2, seed: roughSeed});
-
-            //Render target
-            targetCanvas.width = localScale+targetMargin;
-            targetCanvas.height = localScale+targetMargin;
-            var size = 1.1;
-            roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
-                localScale * size, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1, seed: roughSeed});
         }
+
+        //Render player
+        playerCanvas.width = localScale;
+        playerCanvas.height = localScale;
+        var size = 0.8;
+        roughPlayer.circle(localScale * .5, localScale * .5,
+            localScale * size, {stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+
+        //Render wall
+        wallCanvas.width = localScale+wallMargin;
+        wallCanvas.height = localScale+wallMargin;
+        roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
+            localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+
+        //Render box
+        boxCanvas.width = localScale+boxMargin;
+        boxCanvas.height = localScale+boxMargin;
+        var size = 0.8;
+        roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
+        localScale * size, localScale * size, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, seed: roughSeed});
+
+        //Render target
+        targetCanvas.width = localScale+targetMargin;
+        targetCanvas.height = localScale+targetMargin;
+        var size = 1.1;
+        roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
+            localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
         //Render level
         var levelMargin = 20; //In pixels, positive
@@ -168,11 +204,10 @@ function gameLoop() {
         if (camShakeY > 0) {camShakeY = Math.max(0, camShakeY - reduceCamShake)}
         else if (camShakeY < 0) {camShakeY = Math.min(0, camShakeY + reduceCamShake)}
 
-        //console.log("cx: "+camShakeX + " cy: "+camShakeY)
-
+        ctx.globalAlpha = alph;
         const borderOffset = 5;
         roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
-            horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {seed: roughSeed});
+            horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
 
         drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, roughSeed);
         
@@ -188,51 +223,71 @@ function gameLoop() {
             for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
                 if (x != 0 || y != 0) 
                 {
-                    ctx.globalAlpha = Math.max(0, 1 - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
+                    ctx.globalAlpha = Math.max(0, alph - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
                     if (ctx.globalAlpha > 0) {
                         ctx.drawImage(levelCanvas, 
-                        cameraX + horWidth * x + levelOffsetX * scale * y,
-                        cameraY + verHeight * y + levelOffsetY * scale * x);
+                        cameraX + horWidth * x + levelOffsetX * localScale * y,
+                        cameraY + verHeight * y + levelOffsetY * localScale * x);
                     }
                 }
             }
         }
 
-        ctx.globalAlpha = 1;
+        ctx.globalAlpha = alph;
         ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
+        ctx.globalAlpha = 1;
 
         //Draw level name
         drawStroked(levelName, 40, canvas.height - 40);
 
         ctx.font = "22px sans-serif";
-        ctx.fillStyle = "white";
+        ctx.fillStyle = colors[colorTheme][1];
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
         if (!menuOpened) {
             //Menu
-            roughCanvas.rectangle(-5, -5, 85, 85, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+            roughCanvas.rectangle(-5, -5, 85, 85, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
             ctx.fillText("[Esc]",50,60);
 
             //Reset
-            roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+            roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
             ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
 
             //Undo
-            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2) + 10})
+            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
             ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
 
             //QQQ
-            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: 1});
-            ctx.fillText("[Todo: Level Select, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
+            ctx.fillText("[Todo: Saving, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
         } else {
             //Menu bg
             ctx.globalAlpha = 0.2;
-            ctx.fillStyle = "black";
+            ctx.fillStyle = colors[colorTheme][2];
             ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
 
             ctx.globalAlpha = 1;
-            roughCanvas.rectangle(-5, -5, 405, 305, {fill: "solid", fillWeight: 4, fillStyle: "white", seed: Math.round(roughSeed / 2)})
+            var width = 400;
+            roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+        
+            ctx.fillStyle = colors[colorTheme][1];
+            ctx.textAlign = "center";
+
+            roughCanvas.rectangle(20, 50 + menuSelection * 50, width - 40, 50, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+
+            ctx.fillText("Resume", width * 0.5,75);
+            var txt = "Line Wobble: ";
+            if (lineWobble == true) {
+                txt += "ON";
+            } else {
+                txt += "OFF";
+            }
+            ctx.fillText(txt, width * 0.5,125);
+
+            txt = "Theme: "+colors[colorTheme][0] + " ("+(colorTheme+1) + "/" + colors.length + ")";
+            ctx.fillText(txt, width * 0.5,175);
+            ctx.fillText("Back to Level Select", width * 0.5, 225 );
         }
     
         window.requestAnimationFrame(gameLoop);
@@ -319,17 +374,17 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
     //LevelNode
     for(let i = 0; i != levelNodes.length; i++) {
         levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
-        levelCtx.font = Math.round(0.8 * scale)+"px sans-serif";
+        levelCtx.font = Math.round(0.8 * localScale)+"px sans-serif";
         levelCtx.textAlign = "center";
         levelCtx.textBaseline = "middle";
+        levelCtx.fillStyle = colors[colorTheme][2];
         //drawStroked()
         levelCtx.fillText(levelNodes[i].target.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
         
         if (levelSolved[i+1]) {
-            levelCtx.font = Math.round(0.4 * scale)+"px sans-serif";
+            levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
             levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
         }
-        //rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1, seed: seed});
     }
 
     function tweenPlayer() {
@@ -378,11 +433,7 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 
             //console.log("x: "+diffX + " y: "+diffY)
 
-            percent = Tween(percent);
-
-            function Tween(t) {
-                return(t*(2-t));
-            }
+            percent = EaseInOut(percent);
 
             return ({x: current.x - (diffX * percent), y: current.y - (diffY * percent)});
         } else {
@@ -401,13 +452,11 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 
 function input(key) {
 
+    if (victory) {return;}
+
     if (key == "Escape") {
-        if (level == 0) {
-            menuOpened = !menuOpened;
-        } else {
-            loadLevel(0);
-        }
-        return;
+        menuOpened = !menuOpened;
+        menuSelection = 0;
     }
 
     if (!menuOpened) {
@@ -438,7 +487,10 @@ function input(key) {
                 for(let i = 0; i != levelNodes.length; i++) {
                     var node = levelNodes[i];
                     if (node.x == player.x && node.y == player.y) {
-                        loadLevel(node.target); break;
+                        targetLevel = node.target;
+                        victory = true;
+                        timeSinceLevelWon = 0;
+                        break;
                     }
                 }
             }
@@ -500,16 +552,23 @@ function input(key) {
             prevVerDelta = verDelta;
 
             //Check if won
-            var victory = true;
-            for(let i = 0; i != targets.length; i++) {
-                if (hasBox(targets[i].x, targets[i].y) === null) {
-                    victory = false; break;
+            var hasWon = true;
+            if (targets.length > 0) {
+                for(let i = 0; i != targets.length; i++) {
+                    if (hasBox(targets[i].x, targets[i].y) === null) {
+                        hasWon = false; break;
+                    }
                 }
+            } else {
+                hasWon = false;
             }
 
-            if (victory) {
+            if (hasWon) {
                 console.warn("Victory!",steps + " (" + steps.length + ")");
                 levelSolved[level] = true;
+                victory = true;
+                targetLevel = 0;
+                timeSinceLevelWon = 0;
             }
         } else {
             camShakeX = horDelta * 12;
@@ -517,7 +576,33 @@ function input(key) {
             undoStack.pop(); //Nothing changed, so discard Undo state.
         }
     } else { //Menu input
-
+        var items = 4;
+        if (key == "ArrowDown" || key == "s") {
+            menuSelection += 1; if (menuSelection >= items) {menuSelection = 0;}
+        }
+        else if (key == "ArrowUp" || key == "w") {
+            menuSelection -= 1; if (menuSelection < 0) {menuSelection = items-1;}
+        }
+        else if (key == " " || key == "x" || key == "Enter") {
+            switch(menuSelection) {
+                case 0: 
+                    menuOpened = !menuOpened;
+                    break;
+                break;
+                case 1:
+                    lineWobble = !lineWobble;
+                    break;
+                case 2:
+                    colorTheme++;
+                    if (colorTheme >= colors.length) {
+                        colorTheme = 0;
+                    }
+                    break;
+                case 3:
+                    loadLevel(0);
+                    menuOpened = !menuOpened;
+            }
+        }
     }
 }
 
@@ -535,6 +620,11 @@ function loadLevel(number, resetStack = true) {
     boxes = [];
     targets = [];
     levelNodes = [];
+
+    camShakeX = 0;
+    camShakeY = 0;
+
+    victory = false;
 
     if (metadata.name) {
         levelName = (level) + ": "+ metadata.name;
@@ -584,6 +674,8 @@ function loadLevel(number, resetStack = true) {
     if (resetStack) {
         undoStack = [];
         steps = "";
+        timeSinceLevelStart = 0;
+        timeSinceLevelWon = timeUntilLevelEnd;
     } else {
         steps += "!";
     }
@@ -657,13 +749,17 @@ function even(val) {
     return ((val % 2) == 0)
 }
 
+function EaseInOut(t) {
+    return(t*(2-t));
+}
+
 //From https://stackoverflow.com/questions/13627111/drawing-text-with-an-outer-stroke-with-html5s-canvas
 function drawStroked(text, x, y) {
     ctx.miterLimit = 2;
     ctx.font = '40px sans-serif';
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = colors[colorTheme][2];
     ctx.lineWidth = 8;
     ctx.strokeText(text, x, y);
-    ctx.fillStyle = 'white';
+    ctx.fillStyle = colors[colorTheme][1];
     ctx.fillText(text, x, y);
 }
