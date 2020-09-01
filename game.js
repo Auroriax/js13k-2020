@@ -50,6 +50,9 @@ var levelName = "Test";
 var levelOffsetX = 0;
 var levelOffsetY = 0; //QQQ Can't both be non-zero, might implement this later
 
+var prevLevelOffsetX = 0; //Between -1 and 1
+var prevLevelOffsetY = 0;
+
 onkeydown = e => {
     if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == " " || e.key == "Backspace")
     {
@@ -85,21 +88,28 @@ var timeToCompleteTween = 0.1; //in s
 var timeToUpdateRenders = (1/3); //in s
 var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
 
-var timeUntilLevelEnd = 5 //in s;
+var timeUntilLevelEnd = 4; //in s;
 var timeUntilLevelSelected = 1;
 var timeSinceLevelWon = timeUntilLevelEnd;
 
 var timeSinceLevelStart = 0;
 var timeToLoadLevel = 1; //in s;
 
+var timeUntilChangableTheme = 0.2;
+var timeSinceLastThemeChange = 0;
+
+var timeUntilPlayableAudio = 0.05;
+var timeSinceLastAudio = 0;
+
 var menuOpened = false;
 var menuSelection = 0;
 
-var lineWobble = true;
+var reduceMotion = false;
 var colors = [];
 colors[0] = ["Sketchbook", "white", "black", "gray"]; //name, bg, main, contrast
 colors[1] = ["Scratchpad", "#222", "white", "gray"];
 var colorTheme = 0;
+var audioEnabled = true;
 
 var victory = false;
 var targetLevel = 0;
@@ -120,6 +130,8 @@ function gameLoop() {
         timeSinceUpdatedRenders += timing.currentFrameLength;
         timeSinceLevelStart += timing.currentFrameLength;
         timeSinceLevelWon += timing.currentFrameLength;
+        timeSinceLastThemeChange += timing.currentFrameLength;
+        timeSinceLastAudio += timing.currentFrameLength;
 
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
@@ -127,8 +139,10 @@ function gameLoop() {
         ctx.fillStyle = colors[colorTheme][1];
         ctx.fillRect(0,0,canvas.width, canvas.height);
 
-        if (canvas.width < 700) {
+        if (canvas.width < 700 || canvas.height < 700) {
             scale = 40;
+        } else if (canvas.width < 1000 || canvas.height < 900) {
+            scale = 55;
         } else {
             scale = 70;
         }
@@ -149,6 +163,10 @@ function gameLoop() {
             alph = 0;
         }
 
+        if (reduceMotion) {
+            var localScale = scale;
+        }
+
         //console.log(alph);
 
         var verHeight = gridHeight * localScale;
@@ -156,7 +174,7 @@ function gameLoop() {
 
         //Render
         if (timeSinceUpdatedRenders >= timeToUpdateRenders) {
-            if (lineWobble) {
+            if (!reduceMotion) {
                 roughSeed += 1;
             }
             timeSinceUpdatedRenders = 0;
@@ -219,6 +237,9 @@ function gameLoop() {
         if (levelOffsetX != 0) {screenWidthRatio += 1}
         if (levelOffsetY != 0) {screenHeightRatio += 1}
 
+        var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
+        var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
+
         for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
             for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
                 if (x != 0 || y != 0) 
@@ -226,8 +247,8 @@ function gameLoop() {
                     ctx.globalAlpha = Math.max(0, alph - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
                     if (ctx.globalAlpha > 0) {
                         ctx.drawImage(levelCanvas, 
-                        cameraX + horWidth * x + levelOffsetX * localScale * y,
-                        cameraY + verHeight * y + levelOffsetY * localScale * x);
+                        cameraX + horWidth * x + tweenOffsetX * localScale * y,
+                        cameraY + verHeight * y + tweenOffsetY * localScale * x);
                     }
                 }
             }
@@ -260,7 +281,7 @@ function gameLoop() {
 
             //QQQ
             roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: Saving, Puzzles, Settings. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            ctx.fillText("[Todo: Saving, 20 Puzzles, Shiftblock, player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
         } else {
             //Menu bg
             ctx.globalAlpha = 0.2;
@@ -274,20 +295,38 @@ function gameLoop() {
             ctx.fillStyle = colors[colorTheme][1];
             ctx.textAlign = "center";
 
-            roughCanvas.rectangle(20, 50 + menuSelection * 50, width - 40, 50, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+            var textBase = 50;
+            var textOffset = 50;
+            roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
 
-            ctx.fillText("Resume", width * 0.5,75);
-            var txt = "Line Wobble: ";
-            if (lineWobble == true) {
+            var txt = "Audio: ";
+            if (audioEnabled == true) {
                 txt += "ON";
             } else {
                 txt += "OFF";
             }
-            ctx.fillText(txt, width * 0.5,125);
+            ctx.fillText(txt, width * 0.5,textBase + textOffset * 1);
+
+            ctx.fillText("[Esc] Resume", width * 0.5,textBase);
+            var txt = "Reduce Motion: ";
+            if (reduceMotion == true) {
+                txt += "ON";
+            } else {
+                txt += "OFF";
+            }
+            ctx.fillText(txt, width * 0.5,textBase + textOffset * 2);
 
             txt = "Theme: "+colors[colorTheme][0] + " ("+(colorTheme+1) + "/" + colors.length + ")";
-            ctx.fillText(txt, width * 0.5,175);
-            ctx.fillText("Back to Level Select", width * 0.5, 225 );
+            ctx.fillText(txt, width * 0.5,textBase + textOffset * 3);
+
+            if (level != 0) {
+                ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
+            } else {
+                ctx.font = "16px sans-serif";
+                ctx.fillText("Game by Tom Hermans for js13k 2020", width * 0.5, textBase + textOffset * 3.8);
+                ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
+                ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
+            }
         }
     
         window.requestAnimationFrame(gameLoop);
@@ -451,16 +490,19 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 }
 
 function input(key) {
-
     if (victory) {return;}
 
     if (key == "Escape") {
         menuOpened = !menuOpened;
+        if (menuOpened) {
+            audio("menu", true);
+        }
         menuSelection = 0;
     }
 
     if (!menuOpened) {
         if (key == "r") {
+            audio("restart");
             undoStack.push({player: player, boxes: boxes.slice()});
             loadLevel(level, false);
             return;
@@ -472,6 +514,8 @@ function input(key) {
             return;
         } else if (key == "z") {
             if (undoStack.length != 0) {
+                audio("undo");
+
                 var stateToRestore = undoStack.pop();
 
                 player = stateToRestore.player;
@@ -490,10 +534,35 @@ function input(key) {
                         targetLevel = node.target;
                         victory = true;
                         timeSinceLevelWon = 0;
+                        audio("invalid");
                         break;
                     }
                 }
             }
+        } else if (key == "1") {
+            if (levelOffsetY == 0) {
+                levelOffsetX += 1;
+                prevLevelOffsetX = 1;
+                timeSinceLastAction = 0;
+                if (levelOffsetX >= gridWidth * 0.5) {
+                    levelOffsetX -= gridWidth;
+                }
+            } else {
+                console.log("Movement not resolved: Cannot shift X when Y is shifted")
+            }
+        } else if (key == "2") {
+            if (levelOffsetY == 0) {
+                levelOffsetX -= 1;
+                prevLevelOffsetX = -1;
+                timeSinceLastAction = 0;
+                if (levelOffsetX <= -gridWidth * 0.5) {
+                    levelOffsetX += gridWidth;
+                }
+            } else {
+                console.log("Movement not resolved: Cannot shift X when Y is shifted")
+            }
+        } else if (key == "3") {
+            prevLevelOffsetX = 0;
         }
 
         var dir = "";
@@ -566,17 +635,28 @@ function input(key) {
             if (hasWon) {
                 console.warn("Victory!",steps + " (" + steps.length + ")");
                 levelSolved[level] = true;
+
+                audio("victory");
                 victory = true;
                 targetLevel = 0;
                 timeSinceLevelWon = 0;
+            } else {
+                audio("walk");
             }
         } else {
+            if (horDelta != 0 || verDelta != 0) {
+                audio("invalid");
+            }
             camShakeX = horDelta * 12;
             camShakeY = verDelta * 12;
             undoStack.pop(); //Nothing changed, so discard Undo state.
         }
     } else { //Menu input
-        var items = 4;
+        var items = 5;
+        if (level == 0) {
+            items = 4;
+        }
+
         if (key == "ArrowDown" || key == "s") {
             menuSelection += 1; if (menuSelection >= items) {menuSelection = 0;}
         }
@@ -588,17 +668,25 @@ function input(key) {
                 case 0: 
                     menuOpened = !menuOpened;
                     break;
-                break;
                 case 1:
-                    lineWobble = !lineWobble;
-                    break;
-                case 2:
-                    colorTheme++;
-                    if (colorTheme >= colors.length) {
-                        colorTheme = 0;
+                    audioEnabled = !audioEnabled;
+                    if (audioEnabled) {
+                        audio("menu", true);
                     }
                     break;
+                case 2:
+                    reduceMotion = !reduceMotion;
+                    break;
                 case 3:
+                    if (timeSinceLastThemeChange >= timeUntilChangableTheme) {
+                        timeSinceLastThemeChange = 0;
+                        colorTheme++;
+                        if (colorTheme >= colors.length) {
+                            colorTheme = 0;
+                        }
+                    }
+                    break;
+                case 4:
                     loadLevel(0);
                     menuOpened = !menuOpened;
             }
@@ -762,4 +850,32 @@ function drawStroked(text, x, y) {
     ctx.strokeText(text, x, y);
     ctx.fillStyle = colors[colorTheme][1];
     ctx.fillText(text, x, y);
+}
+
+function audio(soundID, alwaysPlay = false) {
+    if (!audioEnabled) {return;}
+
+    if (timeSinceLastAudio >= timeUntilPlayableAudio || alwaysPlay) {
+        if (!alwaysPlay) {timeSinceLastAudio = 0;}
+        switch (soundID.toLowerCase()) {
+            case "invalid":
+                zzfx(...[,.3,176,.02,,.08,3,.4,-0.7,-21,-127,.01,.05,,,,.38,,.03]);
+                break;
+            case "walk":
+                zzfx(...[.6,.1,176,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
+                break;
+            case "victory":
+                zzfx(...[,,934,.12,.38,.93,1,.27,,.4,-434,.08,.2,.1,,.1,.17,.55,1,.46]);
+                break;
+            case "undo": 
+                zzfx(...[,,110,,,,1,1.82,,.1,,,,.1,,.1,.01,.7,.02,.15]);
+                break;
+            case "restart":
+                zzfx(...[,,283,.02,,.11,,.38,,,,,.07,,,.1,.08,.63,.02]);
+                break;
+            case "menu":
+                zzfx(...[,.02,1638,,.05,.17,1,,,,490,.09,,,,.1,.05,.5,.03]);
+                break;
+        }
+    }
 }

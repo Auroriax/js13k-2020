@@ -78,6 +78,17 @@ levels.push([
     ".##.##"
 ]);
 levels.push([
+    {name: "Cracking Crowns", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    "pb...b",
+    "b#.#.#",
+    ".#ttt#",
+]);
+levels.push([
+    {name: "Cracking Crowns v2", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    "pb.t.b",
+    "b#t.t#",
+]);
+/*levels.push([
     {name: "Fixing tweening bugs", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b......",
     ".##.##",
@@ -85,7 +96,7 @@ levels.push([
     "bbtptb",
     ".#.t.#",
     "......"
-]);
+]);*/
 
 var level = 0;
 
