@@ -42,6 +42,8 @@ const obj = {
     PLAYER: "p",
     WALL: "#",
     BOX: "b",
+    SHIFTBOXHOR: "-",
+    SHIFTBOXVER: "|",
     TARGET: "t",
     LEVELNODE: "l",
 }; //all lowercase if applicable!
@@ -98,7 +100,7 @@ var timeToLoadLevel = 1; //in s;
 var timeUntilChangableTheme = 0.2;
 var timeSinceLastThemeChange = 0;
 
-var timeUntilPlayableAudio = 0.05;
+var timeUntilPlayableAudio = 0.075;
 var timeSinceLastAudio = 0;
 
 var menuOpened = false;
@@ -106,8 +108,8 @@ var menuSelection = 0;
 
 var reduceMotion = false;
 var colors = [];
-colors[0] = ["Sketchbook", "white", "black", "gray"]; //name, bg, main, contrast
-colors[1] = ["Scratchpad", "#222", "white", "gray"];
+colors[0] = ["Sketchbook", "white", "black", "gray", "red"]; //name, bg, main, in-between, contrast
+colors[1] = ["Scratchpad", "#222", "white", "gray", "gold"];
 var colorTheme = 0;
 var audioEnabled = true;
 
@@ -281,7 +283,7 @@ function gameLoop() {
 
             //QQQ
             roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: Saving, 20 Puzzles, Shiftblock, player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            ctx.fillText("[Todo: Saving, 20 Puzzles, Player target, Rubble. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
         } else {
             //Menu bg
             ctx.globalAlpha = 0.2;
@@ -393,6 +395,16 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
         function drawBox(offsetX = 0, offsetY = 0) {
             levelCtx.drawImage(boxCanvas, PosX(boxTween.x) - boxMargin * .5 + offsetX, 
                 PosY(boxTween.y) - boxMargin * 0.5 + offsetY);
+            if (boxes[i].shift == 1) {
+                roughLevel.line(PosX(boxTween.x) + localScale * 0.2, PosY(boxTween.y) + localScale * 0.5, 
+                    PosX(boxTween.x) + localScale * 0.8, PosY(boxTween.y) + localScale * 0.5, 
+                    {stroke: colors[colorTheme][4], strokeWidth: 10, seed: roughSeed})
+            }
+            if (boxes[i].shift == 2) {
+                roughLevel.line(PosX(boxTween.x) + localScale * 0.5, PosY(boxTween.y) + localScale * 0.2, 
+                    PosX(boxTween.x) + localScale * 0.5, PosY(boxTween.y) + localScale * 0.8, 
+                    {stroke: colors[colorTheme][4], strokeWidth: 10, seed: roughSeed})
+            }
         }
         
         drawWrapped(boxes[i], drawBox);
@@ -520,8 +532,12 @@ function input(key) {
 
                 player = stateToRestore.player;
                 boxes = stateToRestore.boxes;
+                levelOffsetX = stateToRestore.xOff;
+                levelOffsetY = stateToRestore.yOff;
 
                 steps = steps.slice(0, -1);
+
+                timeSinceLastAction = timeToCompleteTween;
 
                 console.warn("Popped the undo stack, remaining entries:", undoStack.length);
             }
@@ -539,30 +555,6 @@ function input(key) {
                     }
                 }
             }
-        } else if (key == "1") {
-            if (levelOffsetY == 0) {
-                levelOffsetX += 1;
-                prevLevelOffsetX = 1;
-                timeSinceLastAction = 0;
-                if (levelOffsetX >= gridWidth * 0.5) {
-                    levelOffsetX -= gridWidth;
-                }
-            } else {
-                console.log("Movement not resolved: Cannot shift X when Y is shifted")
-            }
-        } else if (key == "2") {
-            if (levelOffsetY == 0) {
-                levelOffsetX -= 1;
-                prevLevelOffsetX = -1;
-                timeSinceLastAction = 0;
-                if (levelOffsetX <= -gridWidth * 0.5) {
-                    levelOffsetX += gridWidth;
-                }
-            } else {
-                console.log("Movement not resolved: Cannot shift X when Y is shifted")
-            }
-        } else if (key == "3") {
-            prevLevelOffsetX = 0;
         }
 
         var dir = "";
@@ -578,9 +570,12 @@ function input(key) {
         console.log("------");
 
         if (horDelta != 0 || verDelta != 0) {
-            undoStack.push({player: player, boxes: boxes.slice()}); //Other objects can't move, so aren't stored.
+            undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
 
             var movementResolved = false;
+
+            prevLevelOffsetX = 0;
+            prevLevelOffsetY = 0;
 
             var target = wrapCoords(player.x + horDelta, player.y + verDelta);
             var targetX = target.x;
@@ -598,9 +593,41 @@ function input(key) {
                 //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
                 //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
                 if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null) {
-                    boxes[foundBox] = {x: boxTargetX, y: boxTargetY};
+                    boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
                     player = {x: targetX, y: targetY};
                     movementResolved = true;
+
+                    if (boxes[foundBox].shift != 0) {
+                        if (boxes[foundBox].shift == 1) { //Horizontal/x
+                            if (levelOffsetY == 0) {
+                                levelOffsetX -= horDelta;
+                                prevLevelOffsetX = -horDelta;
+                                timeSinceLastAction = 0;
+                                if (levelOffsetX >= gridWidth * 0.5) {
+                                    levelOffsetX -= gridWidth;
+                                } else if (levelOffsetX <= -gridWidth * 0.5) {
+                                    levelOffsetX += gridWidth;
+                                }
+                            } else {
+                                console.log("Shifting not resolved: Cannot shift X when Y is shifted")
+                            }
+                        }
+                        
+                        if (boxes[foundBox].shift == 2) { //Vertical/y
+                            if (levelOffsetX == 0) {
+                                levelOffsetY -= verDelta;
+                                prevLevelOffsetY = -verDelta;
+                                timeSinceLastAction = 0;
+                                if (levelOffsetY >= gridHeight * 0.5) {
+                                    levelOffsetY -= gridHeight;
+                                } else if (levelOffsetY <= -gridHeight * 0.5) {
+                                    levelOffsetY += gridHeight;
+                                }
+                            } else {
+                                console.log("Shifting not resolved: Cannot shift Y when X is shifted")
+                            }
+                        }
+                    }
                 } else {
                     console.log("Movement not resolved","Could not push box");
                 }
@@ -747,7 +774,13 @@ function loadLevel(number, resetStack = true) {
                     walls.push({x: x, y: y});
                     break;
                 case obj.BOX:
-                    boxes.push({x: x, y: y});
+                    boxes.push({x: x, y: y, shift: 0});
+                    break;
+                case obj.SHIFTBOXHOR:
+                    boxes.push({x: x, y: y, shift: 1});
+                    break;
+                case obj.SHIFTBOXVER:
+                    boxes.push({x: x, y: y, shift: 2});
                     break;
                 case obj.TARGET:
                     targets.push({x: x, y: y});
