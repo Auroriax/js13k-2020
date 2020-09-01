@@ -84,16 +84,103 @@ levels.push([
     ".#ttt#",
 ]);
 levels.push([
-    {name: "Cracking Crowns v2", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    {name: "Cracking Crowns v2", xOff: 3}, 
     "pb.t.b",
     "b#t.t#",
 ]);
 levels.push([
-    {name: "Saturnian Shift"}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    {name: "Saturnian Shift"}, //Tutorial level for introducing the shifters
     "bt##|#",
     "###p..",
     "####.#"
 ]);
+levels.push([
+    {name: "Cornered Contraption", yOff: 1}, //Good idea but needs better execution
+    "p....",
+    ".|...",
+    "#####",
+    ".t#..",
+    "###.."
+]);
+levels.push([
+    {name: "Irregular Infrastructure", yOff: 2}, //urullulddddddldrurdldrrrrdrdddddddddddrdllllluldddddrdlllllulddddrdlll (70)
+    "##..|",
+    ".#..p",
+    ".#..#",
+    ".#.#t",
+    "....#",
+    "....."
+]);
+levels.push([
+    {name: "Questionable Quaternions", yOff: 2}, //Blueprint of what could be a good idea (that does take up a lotta space though)
+    ".....###",
+    "###..#t#",
+    "#t#..#|#",
+    "#|#..#..",
+    ".....#|#",
+    ".....#t#",
+    ".#######",
+    ".#tt#...",
+    ".#||#...",
+]);
+levels.push([
+    {name: "Stuck Shifter"}, //I probably want something like this, but with a player target instead of a stuck shifter
+    "........",
+    "...|#...",
+    "..#t#...",
+    "..###.|.",
+    "........",
+    "b......b",
+    "|...t..b",
+    "b......b",
+    "........",
+]);
+levels.push([
+    {name: "Stuck Shifter", yOff: -2}, //There used to be a | here, but it might work without it
+    ".t.",
+    "#b#",
+    ".t.",
+    "#b#",
+    ".t.",
+    "#b#",
+    ".t.",
+    "#b#",
+]);
+levels.push([
+    {name: "Numbered Lock", yOff: -2}, //Needs to be a way to push a box 3-high and to get back to the other room
+    "########",
+    "###..#tt",
+    "###...##",
+    ".......#",
+    "####....",
+    "...#...#",
+    "#...##..",
+    "..||.###",
+    "#.p.....",
+    "##...###",
+]);
+levels.push([
+    {name: "Enchanted Maze", yOff: -2}, //This idea but better!
+    "t.b.",
+    "#t#b",
+    "t.b.",
+    "#|#t",
+]);
+
+var level = 0;
+
+/*levels.push([
+    {name: "Stuck Shifter V2", yOff: -1}, //Idea behind this puzzle was to push an | horizontally across multiple screen wraps
+    "........",
+    "#t......",
+    "........",
+    "......|.",
+    "........",
+    "........",
+    "........",
+    "........",
+    "........",
+]);*/
 /*levels.push([
     {name: "Fixing tweening bugs", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b......",
@@ -103,8 +190,6 @@ levels.push([
     ".#.t.#",
     "......"
 ]);*/
-
-var level = 0;
 
 //VIABLE
 /*levels.push([

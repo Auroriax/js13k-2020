@@ -515,7 +515,7 @@ function input(key) {
     if (!menuOpened) {
         if (key == "r") {
             audio("restart");
-            undoStack.push({player: player, boxes: boxes.slice()});
+            undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY});
             loadLevel(level, false);
             return;
         } else if (key == "+") {
