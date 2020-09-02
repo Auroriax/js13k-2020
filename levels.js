@@ -2,11 +2,12 @@ var levels = [];
 levels.push([
     {}, //Level select
     "#########",
-    "pl......",
-    "l.l.....",
+    "pl.......",
+    "l.l......",
     ".l..l....",
     "...l.l...",
     "....l..l.",
+    "......l.l",
     "......l.l",
     ".......l.",
     "#########",
@@ -73,13 +74,19 @@ levels.push([
 ]);
 levels.push([
     {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
-    "b.....",
+    "b..p..",
     ".##.##",
     ".#.t.#",
-    "bbtptb",
+    "bbt.tb",
     ".#.t.#",
     ".##.##"
 ]);
+/*levels.push([
+    {name: "Twisted Terrace"}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    "b..t..",
+    ".#tpt#",
+    "bb.t.b"
+]);*/
 levels.push([
     {name: "Crowned Conundrum", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "pb...b",
@@ -92,7 +99,7 @@ levels.push([
     "b#t.t#",
 ]);*/
 levels.push([
-    {name: "Saturnian Shift"}, //Tutorial level for introducing the shifters
+    {name: "Sift & Shift"}, //Tutorial level for introducing the shifters
     "bt##|#",
     "###p..",
     "####.#"
@@ -125,49 +132,52 @@ levels.push([
     "#|#",
 ]);
 levels.push([
+    {name: "Enchanted Maze"}, //ldRuluRdrUUUUUluRRluuuulluuuUruLLrUUUddllldRRllduurrrrlDDDDDuuuullldRRurDDDD (76)
+    "##.#.###.#.#",
+    "#..-..#....#",
+    "#..p..#.t.t.",
+    "#..-..##....",
+    "##.#.###.#.#",
+]);
+levels.push([
+    {name: "Numbered Lock", yOff: -2}, //lrrlluurrDLLLLLLLdlUUrrdddrrrrrddrruLdlUUlluulllluuulluurDDldRRddrrrrruurDDllllLulDuullllllllllullldRRRRRRRRRRRurDrddrddlUluluurlddrRuulDrdRRRlllulldRRRR (153)
+    "#########",
+    "####..###",
+    ".......##",
+    "####....#",
+    "####.....",
+    "....#...#",
+    "#....#...",
+    "...||.###",
+    "##.p.....",
+    "tt#...###",
+]);
+levels.push([
+    {name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+    "###...#",
+    ".pb..rt",
+    "#######"
+]);
+levels.push([
     {name: "Questionable Quaternions", yOff: 2}, //Blueprint of what could be a good idea (that does take up a lotta space though)
     ".....###",
-    "###..#t#",
-    "#t#..#|#",
-    "#|#..#..",
-    ".....#|#",
-    ".....#t#",
+    ".#...#tr",
+    "rtr..#|r",
+    "r|r..#r.",
+    ".r...#|r",
+    ".....#tr",
     ".#######",
     ".#tt#...",
-    ".#||#...",
+    ".r||r...",
 ]);
+/*
 levels.push([
-    {name: "Stuck Shifter"}, //I probably want something like this, but with a player target instead of a stuck shifter
-    "........",
-    "...|#...",
-    "..#t#...",
-    "..###.|.",
-    "........",
-    "b......b",
-    "|...t..b",
-    "b......b",
-    "........",
-]);
-levels.push([
-    {name: "Numbered Lock", yOff: -2}, //Needs to be a way to push a box 3-high and to get back to the other room
-    "########",
-    "###..#tt",
-    "###...##",
-    ".......#",
-    "####....",
-    "...#...#",
-    "#...##..",
-    "..||.###",
-    "#.p.....",
-    "##...###",
-]);
-levels.push([
-    {name: "Enchanted Maze", yOff: -2}, //This idea but better!
-    "t.b.",
-    "#t#b",
-    "t.b.",
-    "#|#t",
-]);
+    {name: "Stuck Shifter"}, //Idea is good but it is messy, needs player target to have potential
+    "bbrr.b",
+    "br.+rb",
+    "p.r.r.",
+    "bb.r.b"
+]);*/
 
 var level = 0;
 

@@ -30,6 +30,11 @@ const targetCtx = wallCanvas.getContext("2d");
 const roughTarget = rough.canvas(targetCanvas);
 const targetMargin = 15;
 
+const rubbleCanvas = document.createElement("canvas");
+const rubbleCtx = wallCanvas.getContext("2d");
+const roughRubble = rough.canvas(rubbleCanvas);
+const rubbleMargin = 15;
+
 let undoStack = [];
 
 var camShakeX = 0;
@@ -42,13 +47,15 @@ const obj = {
     PLAYER: "p",
     WALL: "#",
     BOX: "b",
+    SHIFTBOX: "+",
     SHIFTBOXHOR: "-",
     SHIFTBOXVER: "|",
     TARGET: "t",
     LEVELNODE: "l",
+    RUBBLE: "r"
 }; //all lowercase if applicable!
 
-var levelName = "Test";
+var levelName = "";
 var levelOffsetX = 0;
 var levelOffsetY = 0; //QQQ Can't both be non-zero, might implement this later
 
@@ -75,10 +82,12 @@ var gridHeight = levels[level].length;
 var gridWidth = levels[level][0].length;
 
 var player = {x: 0, y: 0};
+//var playerTarget 
 var walls = [];
 var boxes = [];
 var targets = [];
 var levelNodes = [];
+var rubble = [];
 
 var steps = "";
 var prevHorDelta = 0;
@@ -139,6 +148,7 @@ function gameLoop() {
         canvas.width = canvas.clientWidth;
         canvas.height = canvas.clientHeight;
 
+        ctx.globalAlpha = 1;
         ctx.fillStyle = colors[colorTheme][1];
         ctx.fillRect(0,0,canvas.width, canvas.height);
 
@@ -192,7 +202,7 @@ function gameLoop() {
         playerCanvas.height = localScale;
         var size = 0.8;
         roughPlayer.circle(localScale * .5, localScale * .5,
-            localScale * size, {stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+            localScale * size, {fill: colors[colorTheme][1], fillStyle: "solid", stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
         //Render wall
         wallCanvas.width = localScale+wallMargin;
@@ -206,6 +216,13 @@ function gameLoop() {
         var size = 0.8;
         roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
         localScale * size, localScale * size, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, seed: roughSeed});
+
+        //Render rubble
+        rubbleCanvas.width = localScale+rubbleMargin;
+        rubbleCanvas.height = localScale+rubbleMargin;
+        var size = 1.1;
+        roughRubble.rectangle(rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, 
+        localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", strokeWidth: 2, seed: roughSeed});
 
         //Render target
         targetCanvas.width = localScale+targetMargin;
@@ -234,7 +251,7 @@ function gameLoop() {
         roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
             horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
 
-        drawLevel(roughLevel, 0, 0, gridWidth, gridHeight, localScale, roughSeed);
+        drawLevel(0, 0, gridWidth, gridHeight, localScale);
         
         var clipOffset = 10; //In pixels, positive
         var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
@@ -281,7 +298,7 @@ function gameLoop() {
 
                 //QQQ
             roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: Feedback, Saving, 20 Puzzles, Player target, Rubble. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            ctx.fillText("[Todo: Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
 
                 if (level != 0) {
                     if (!freshState) {
@@ -372,7 +389,7 @@ function gameLoop() {
 
 window.requestAnimationFrame(gameLoop);
 
-function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, seed) {
+function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
     function drawWrapped(object, drawFunction) {
         drawFunction();
@@ -398,6 +415,27 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
 
     var off = 10;
 
+    //Rubble
+    for(let i = 0; i != rubble.length; i++) {
+        //var even = (walls[i].x + walls[i].y);
+        levelCtx.drawImage(rubbleCanvas, PosX(rubble[i].x) - rubbleMargin * 0.5, PosY(rubble[i].y) - rubbleMargin * 0.5);
+    }
+
+    //Target
+    for(let i = 0; i != targets.length; i++) {
+        levelCtx.drawImage(targetCanvas, PosX(targets[i].x) - targetMargin * 0.5, PosY(targets[i].y) - targetMargin * 0.5);
+    }
+
+    //Walls
+    for(let i = 0; i != walls.length; i++) {
+        levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
+    }
+
+    //LevelNode image
+    for(let i = 0; i != levelNodes.length; i++) {
+        levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
+    }
+
     //Player
     var playerTween = tweenPlayer();
 
@@ -415,36 +453,23 @@ function drawLevel(rghCanvas,rootX,rootY, gridWidth, gridHeight, localScale, see
         function drawBox(offsetX = 0, offsetY = 0) {
             levelCtx.drawImage(boxCanvas, PosX(boxTween.x) - boxMargin * .5 + offsetX, 
                 PosY(boxTween.y) - boxMargin * 0.5 + offsetY);
-            if (boxes[i].shift == 1) {
-                roughLevel.line(PosX(boxTween.x) + localScale * 0.2, PosY(boxTween.y) + localScale * 0.5, 
-                    PosX(boxTween.x) + localScale * 0.8, PosY(boxTween.y) + localScale * 0.5, 
-                    {stroke: colors[colorTheme][4], strokeWidth: 10, seed: roughSeed})
+            if (boxes[i].shift == 1 || boxes[i].shift == 3) {
+                roughLevel.line(PosX(boxTween.x) + localScale * 0.2 + offsetX, PosY(boxTween.y) + localScale * 0.5 + offsetY, 
+                    PosX(boxTween.x) + localScale * 0.8 + offsetX, PosY(boxTween.y) + localScale * 0.5 + offsetY, 
+                    {stroke: colors[colorTheme][4], strokeWidth: localScale / 7, seed: roughSeed})
             }
-            if (boxes[i].shift == 2) {
-                roughLevel.line(PosX(boxTween.x) + localScale * 0.5, PosY(boxTween.y) + localScale * 0.2, 
-                    PosX(boxTween.x) + localScale * 0.5, PosY(boxTween.y) + localScale * 0.8, 
-                    {stroke: colors[colorTheme][4], strokeWidth: 10, seed: roughSeed})
+            if (boxes[i].shift == 2 || boxes[i].shift == 3) {
+                roughLevel.line(PosX(boxTween.x) + localScale * 0.5 + offsetX, PosY(boxTween.y) + localScale * 0.2 + offsetY, 
+                    PosX(boxTween.x) + localScale * 0.5 + offsetX, PosY(boxTween.y) + localScale * 0.8 + offsetY, 
+                    {stroke: colors[colorTheme][4], strokeWidth: localScale / 7, seed: roughSeed})
             }
         }
         
         drawWrapped(boxes[i], drawBox);
     }
 
-    //Target
-    for(let i = 0; i != targets.length; i++) {
-        levelCtx.drawImage(targetCanvas, PosX(targets[i].x) - targetMargin * 0.5, PosY(targets[i].y) - targetMargin * 0.5);
-        //rghCanvas.circle(PosX(targets[i].x) + localScale * 0.5, PosY(targets[i].y) + localScale * 0.5, localScale * 1.1, {fillStyle: "zigzag", fill: "#888", strokeWidth: 1, seed: seed});
-    }
-
-    //Walls
-    for(let i = 0; i != walls.length; i++) {
-        //var even = (walls[i].x + walls[i].y);
-        levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
-    }
-
-    //LevelNode
+    //LevelNode text
     for(let i = 0; i != levelNodes.length; i++) {
-        levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
         levelCtx.font = Math.round(0.8 * localScale)+"px sans-serif";
         levelCtx.textAlign = "center";
         levelCtx.textBaseline = "middle";
@@ -564,6 +589,15 @@ function input(key) {
                     freshState = false;
                 }
 
+                if (level == 0) {
+                    var lvl = hasLevelNode(player.x, player.y);
+                    if (lvl != null) {
+                        levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                    } else {
+                        levelName = "";
+                    }
+                }
+
                 timeSinceLastAction = timeToCompleteTween;
 
                 console.warn("Popped the undo stack, remaining entries:", undoStack.length);
@@ -615,14 +649,14 @@ function input(key) {
 
                 //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
                 //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
-                if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null) {
+                if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null && hasRubble(boxTargetX, boxTargetY) === null) {
                     boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
                     player = {x: targetX, y: targetY};
                     movementResolved = true;
                     boxPushed = true;
 
                     if (boxes[foundBox].shift != 0) {
-                        if (boxes[foundBox].shift == 1) { //Horizontal/x
+                        if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal/x
                             if (levelOffsetY == 0) {
                                 levelOffsetX -= horDelta;
                                 prevLevelOffsetX = -horDelta;
@@ -637,7 +671,7 @@ function input(key) {
                             }
                         }
                         
-                        if (boxes[foundBox].shift == 2) { //Vertical/y
+                        if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical/y
                             if (levelOffsetX == 0) {
                                 levelOffsetY -= verDelta;
                                 prevLevelOffsetY = -verDelta;
@@ -677,11 +711,13 @@ function input(key) {
 
             freshState = false;
 
-            var lvl = hasLevelNode(player.x, player.y);
-            if (level == 0 && lvl != null) {
-                levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
-            } else {
-                levelName = "";
+            if (level == 0) {
+                var lvl = hasLevelNode(player.x, player.y);
+                if (lvl != null) {
+                    levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                } else {
+                    levelName = "";
+                }
             }
 
             //Check if won
@@ -700,7 +736,7 @@ function input(key) {
                 console.warn("Victory!",steps + " (" + steps.length + ")");
                 levelSolved[level] = true;
 
-                audio("victory");
+                audio("victory", true);
                 victory = true;
                 timeSinceLevelWon = 0;
             } else {
@@ -767,10 +803,11 @@ function loadLevel(number, resetStack = true) {
     gridWidth = levelToLoad[0].length;
     
     player = {x: 0, y: 0};
-    walls = [];
-    boxes = [];
-    targets = [];
-    levelNodes = [];
+    walls.length = 0;
+    boxes.length = 0;
+    targets.length = 0;
+    levelNodes.length = 0;
+    rubble.length = 0;
 
     camShakeX = 0;
     camShakeY = 0;
@@ -824,6 +861,9 @@ function loadLevel(number, resetStack = true) {
                 case obj.SHIFTBOXVER:
                     boxes.push({x: x, y: y, shift: 2});
                     break;
+                case obj.SHIFTBOX:
+                    boxes.push({x: x, y: y, shift: 3});
+                    break;
                 case obj.TARGET:
                     targets.push({x: x, y: y});
                     break;
@@ -835,6 +875,9 @@ function loadLevel(number, resetStack = true) {
 
                         levelName = (targetLevel)+": "+levels[targetLevel][0].name + " - [Space] to enter";
                     }
+                    break;
+                case obj.RUBBLE:
+                    rubble.push({x: x, y: y});
                     break;
             }
         }
@@ -916,6 +959,10 @@ function hasTarget(x, y) {
 
 function hasLevelNode(x, y) {
     return hasThing(levelNodes, x, y)
+}
+
+function hasRubble(x, y) {
+    return hasThing(rubble, x, y)
 }
 
 function even(val) {
