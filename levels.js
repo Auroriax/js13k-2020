@@ -1,12 +1,15 @@
 var levels = [];
 levels.push([
     {}, //Level select
-    "########",
-    "l.l.l.l.",
-    "...p....",
-    "........",
-    "l.l.l.l.",
-    "########",
+    "#########",
+    "pl......",
+    "l.l.....",
+    ".l..l....",
+    "...l.l...",
+    "....l..l.",
+    "......l.l",
+    ".......l.",
+    "#########",
 ]);
 levels.push([
     {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
@@ -78,16 +81,16 @@ levels.push([
     ".##.##"
 ]);
 levels.push([
-    {name: "Cracking Crowns", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    {name: "Crowned Conundrum", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "pb...b",
     "b#.#.#",
     ".#ttt#",
 ]);
-levels.push([
+/*levels.push([
     {name: "Cracking Crowns v2", xOff: 3}, 
     "pb.t.b",
     "b#t.t#",
-]);
+]);*/
 levels.push([
     {name: "Saturnian Shift"}, //Tutorial level for introducing the shifters
     "bt##|#",
@@ -95,7 +98,7 @@ levels.push([
     "####.#"
 ]);
 levels.push([
-    {name: "Cornered Contraption", yOff: 1}, //Good idea but needs better execution
+    {name: "Cornered Contraption", yOff: 1}, //drrrrrrrlllllurdruulurrrrdrruulrddllurdrulurrrrrurdldrr (55)
     "p....",
     ".|...",
     "#####",
@@ -110,6 +113,16 @@ levels.push([
     ".#.#t",
     "....#",
     "....."
+]);
+levels.push([
+    {name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+    "...",
+    ".t.",
+    "#|#",
+    ".t.",
+    "#b#",
+    "pt.",
+    "#|#",
 ]);
 levels.push([
     {name: "Questionable Quaternions", yOff: 2}, //Blueprint of what could be a good idea (that does take up a lotta space though)
@@ -134,17 +147,6 @@ levels.push([
     "|...t..b",
     "b......b",
     "........",
-]);
-levels.push([
-    {name: "Stuck Shifter", yOff: -2}, //There used to be a | here, but it might work without it
-    ".t.",
-    "#b#",
-    ".t.",
-    "#b#",
-    ".t.",
-    "#b#",
-    ".t.",
-    "#b#",
 ]);
 levels.push([
     {name: "Numbered Lock", yOff: -2}, //Needs to be a way to push a box 3-high and to get back to the other room
