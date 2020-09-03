@@ -284,6 +284,20 @@ function gameLoop() {
         ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
         ctx.globalAlpha = 1;
 
+        //Path
+        /*if (path && path.length != 0) {
+            var drawPath = [[cameraX + levelMargin * 0.5 + (player.x+.5) * localScale, cameraY + levelMargin * 0.5 + (player.y+.5) * localScale]];
+            for(var i = 0; i != path.length; i += 1) {
+                drawPath.push([cameraX + levelMargin * 0.5 + (path[i].x + 0.5 - gridHeight) * localScale, 
+                cameraY + levelMargin * 0.5 + (path[i].y + 0.5 - gridWidth) * localScale]);
+            }
+            //console.log(drawPath)
+
+            roughCanvas.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
+            var last = drawPath[drawPath.length-1]
+            roughCanvas.circle(last[0], last[1], 25, {seed: roughSeed});
+        }*/
+
         //Draw level name
         drawStroked(levelName, 40, canvas.height - 40);
 
@@ -484,19 +498,6 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
             levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
         }
     }
-
-    //Path
-    /*if (path && path.length != 0) {
-        var drawPath = [[PosX(player.x)+ localScale * 0.5, PosY(player.y) + localScale * 0.5]];
-        for(var i = 0; i != path.length; i += 1) {
-            drawPath.push([PosY(path[i].x) + localScale * 0.5, PosX(path[i].y) + localScale * 0.5]);
-        }
-        //console.log(drawPath)
-
-        roughLevel.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
-        var last = drawPath[drawPath.length-1]
-        roughLevel.circle(last[0], last[1], 25, {seed: roughSeed});
-    }*/
 
     function tweenPlayer() {
         if (undoStack.length > 0) {
@@ -721,7 +722,7 @@ function input(key) {
             }
             timeSinceLastAction = 0;
 
-            //pathFinding(1, 1);
+            pathFinding(1, 2);
 
             prevHorDelta = horDelta;
             prevVerDelta = verDelta;
@@ -1012,9 +1013,9 @@ function drawStroked(text, x, y) {
             for(var yy = 0; yy != 3; yy += 1) {
                 for(var y = 0; y != gridHeight; y += 1) {
                     if (hasBox(x,y) !== null || hasWall(x,y) !== null) {
-                        grid[x].push(0);
+                        grid[grid.length-1].push(0);
                     } else {
-                        grid[x].push(1);
+                        grid[grid.length-1].push(1);
                     }
                 }
             }
@@ -1022,20 +1023,68 @@ function drawStroked(text, x, y) {
     }
 
     //Apply level offset
-    if (levelOffsetX != 0 || levelOffsetY != 0) {
-        var bigGrid = [];
+    if (levelOffsetX != 0) {
+        console.log("Shifting X for the pathfinder");
+        var s = Math.sign(levelOffsetY)-1;
+        for(var i = 0; i != Math.abs(levelOffsetX); i += 1) {
+            for(var j = 0; j != grid.length; j += 1) {
+                var d = Math.floor(j / gridWidth) - 1; 
+                console.log("d",d)
+                if (d*s == 1) { //Remove from ending of array, move to back
+                    var item = grid[j].pop()
+                    grid[j].unshift(item);
+                } else if (d*s == -1) {
+                    var item = grid[j].shift(); //Remove from beginning of array, add at end
+                    grid[j].push(DataTransferItem)
+                }
+            }
+        }
+    } else if (levelOffsetY != 0) {
+        //QQQ
     }
 
     console.log(grid);
 
     var graph = new Graph(grid);
-    var start = graph.grid[(player.x)][(player.y)];
-    console.log("Start",start);
-    var end = graph.grid[targetX][targetY];
-    var result = astar.search(graph, start, end);
 
-    console.log("Result",result);
-    path = result;
+    var winningPath = [];
+    for(var x = -1; x != 2; x += 1) {
+        for(var y = -1; y != 2; y += 1) {
+            var px = player.x + (x+1) * gridHeight;
+            var py = player.y + (y+1) * gridWidth;
+
+            var tx = (targetX + gridHeight);
+            var ty = (targetY + gridWidth);
+
+            if (px == tx || py == ty) {
+                //Already on the targeted position!
+                path = [];
+                return;
+            }
+
+            if (px < 0 || py < 0 || tx < 0 || ty < 0) {
+                console.log("One of the coordinates falls below 0");
+                break;
+            } else if (px > gridWidth*3 || py > gridHeight*3 || tx > gridWidth*3 || ty > gridHeight*3) {
+                console.log("One of the coordinates falls beyond grid boundaries");
+                break;
+            }
+ 
+            var start = graph.grid[(px)][(py)];
+            console.log("Start",start);
+            var end = graph.grid[tx][ty];
+            console.log("End",end);
+            var result = astar.search(graph, start, end);
+            console.log("Result",result);
+
+            if (result.length != 0 && (result.length < winningPath.length || winningPath.length == 0)) {
+                winningPath = result;
+            }
+        }
+    }
+
+    console.log("Winning Result",winningPath);
+    path = winningPath;
 }*/
 
 function audio(soundID, alwaysPlay = false) {

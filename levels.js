@@ -1,7 +1,7 @@
 var levels = [];
 levels.push([
-    {}, //Level select
-    "#########",
+    {xOff: 0}, //Level select
+    "###...###",
     "pl.......",
     "l.l......",
     ".l..l....",
@@ -10,10 +10,10 @@ levels.push([
     "......l.l",
     "......l.l",
     ".......l.",
-    "#########",
+    "###...###",
 ]);
 levels.push([
-    {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle!
+    {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
     "#####.#",
     "......#",
     "...#..#",
