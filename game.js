@@ -204,7 +204,7 @@ function gameLoop() {
         playerCanvas.height = localScale;
         var size = 0.8;
         roughPlayer.circle(localScale * .5, localScale * .5,
-            localScale * size, {fill: colors[colorTheme][1], fillStyle: "solid", stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+            localScale * size, {fill: colors[colorTheme][1], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
         //Render wall
         wallCanvas.width = localScale+wallMargin;
@@ -309,12 +309,12 @@ function gameLoop() {
         if (!menuOpened) {
             if (!victory) {
             //Menu
-                roughCanvas.rectangle(-5, -5, 85, 85, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
                 ctx.fillText("[Esc]",50,60);
 
                 //QQQ
-            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: A*, Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
+            ctx.fillText("[Todo: Lockblocks, Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
 
                 if (level != 0) {
                     if (!freshState) {
@@ -324,7 +324,7 @@ function gameLoop() {
                     }
 
                     //Reset
-                    roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                    roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
                     ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
 
                     if (undoStack.length > 0) {
@@ -333,7 +333,7 @@ function gameLoop() {
                         ctx.globalAlpha = 0.25;
                     }
                     //Undo
-                        roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
+                        roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
                         ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
                     }
                 }
@@ -345,7 +345,7 @@ function gameLoop() {
 
             ctx.globalAlpha = 1;
             var width = 400;
-            roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: "solid", fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+            roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
         
             ctx.fillStyle = colors[colorTheme][1];
             ctx.textAlign = "center";
@@ -722,7 +722,7 @@ function input(key) {
             }
             timeSinceLastAction = 0;
 
-            pathFinding(1, 2);
+            //pathFinding(1, 2);
 
             prevHorDelta = horDelta;
             prevVerDelta = verDelta;

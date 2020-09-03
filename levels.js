@@ -64,15 +64,6 @@ levels.push([
     "####"
 ]);
 levels.push([
-    {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
-    "#######",
-    "t....p.",
-    "t..b.b.",
-    ".######",
-    "t#.b.b.",
-    "t.....#"
-]);
-levels.push([
     {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
     "b..p..",
     ".##.##",
@@ -80,6 +71,15 @@ levels.push([
     "bbt.tb",
     ".#.t.#",
     ".##.##"
+]);
+levels.push([
+    {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
+    "#######",
+    "t....p.",
+    "t..b.b.",
+    ".######",
+    "t#.b.b.",
+    "t.....#"
 ]);
 /*levels.push([
     {name: "Twisted Terrace"}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
