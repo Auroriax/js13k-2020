@@ -52,7 +52,9 @@ const obj = {
     SHIFTBOXVER: "|",
     TARGET: "t",
     LEVELNODE: "l",
-    RUBBLE: "r"
+    RUBBLE: "r",
+
+    SHIFTBOXANDTARGET: "x"
 }; //all lowercase if applicable!
 
 var levelName = "";
@@ -121,12 +123,22 @@ var reduceMotion = false;
 var colors = [];
 colors[0] = ["Sketchbook", "white", "black", "gray", "red"]; //name, bg, main, in-between, contrast
 colors[1] = ["Scratchpad", "#222", "white", "gray", "gold"];
+colors[2] = ["Golden Ticket", "#333", "#b29700", "#8e7900", "#efe7d6"];
+colors[3] = ["Ikaniko", "#1E2A26", "#7CA49B", "#267B75", "#C8EEE5" ]
+colors[4] = ["BackFlipped", "#223e32", "#b3dd52", "#04bf00", "#A7C06D" ]
 var colorTheme = 0;
 var audioEnabled = true;
 
 var freshState = true; //If the level was either just loaded or just reset
 var victory = false; //If the level is finished, no input is accepted until the next level loads
 var targetLevel = 0;
+
+var dirtyRender = false; //Change when theme was changed.
+var previousScale = 0;
+
+window.onresize = function() {
+    dirtyRender = true;
+}
 
 var levelSolved = [];
 for(var i = 0; i != levels.length; i += 1) {
@@ -146,13 +158,6 @@ function gameLoop() {
         timeSinceLevelWon += timing.currentFrameLength;
         timeSinceLastThemeChange += timing.currentFrameLength;
         timeSinceLastAudio += timing.currentFrameLength;
-
-        canvas.width = canvas.clientWidth;
-        canvas.height = canvas.clientHeight;
-
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = colors[colorTheme][1];
-        ctx.fillRect(0,0,canvas.width, canvas.height);
 
         if (canvas.width < 700 || canvas.height < 700) {
             scale = 40;
@@ -186,61 +191,61 @@ function gameLoop() {
             var localScale = scale;
         }
 
-        //console.log(alph);
-
         var verHeight = gridHeight * localScale;
         var horWidth = gridWidth * localScale;
+        var rerendered = false;
+
+        //console.log("Triggers every frame");
 
         //Render
-        if (timeSinceUpdatedRenders >= timeToUpdateRenders) {
-            if (!reduceMotion) {
+        if ((!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) || localScale != previousScale || dirtyRender) {
+            if (!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) {
                 roughSeed += 1;
             }
+
+            rerendered = true;
+
+            previousScale = localScale;
+            dirtyRender = false;
             timeSinceUpdatedRenders = 0;
+
+            //Render player
+            playerCanvas.width = localScale;
+            playerCanvas.height = localScale;
+            var size = 0.8;
+            roughPlayer.circle(localScale * .5, localScale * .5,
+                localScale * size, {fill: colors[colorTheme][1], fillStyle: "solid", stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+
+            //Render wall
+            wallCanvas.width = localScale+wallMargin;
+            wallCanvas.height = localScale+wallMargin;
+            roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
+                localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+
+            //Render box
+            boxCanvas.width = localScale+boxMargin;
+            boxCanvas.height = localScale+boxMargin;
+            var size = 0.8;
+            roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
+            localScale * size, localScale * size, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, seed: roughSeed});
+
+            //Render rubble
+            rubbleCanvas.width = localScale+rubbleMargin;
+            rubbleCanvas.height = localScale+rubbleMargin;
+            var size = 1.1;
+            roughRubble.rectangle(rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, 
+            localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", fillWeight: localScale / 70, strokeWidth: 2, seed: roughSeed});
+
+            //Render target
+            targetCanvas.width = localScale+targetMargin;
+            targetCanvas.height = localScale+targetMargin;
+            var size = 1.1;
+            roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
+                localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+
         }
 
-        //Render player
-        playerCanvas.width = localScale;
-        playerCanvas.height = localScale;
-        var size = 0.8;
-        roughPlayer.circle(localScale * .5, localScale * .5,
-            localScale * size, {fill: colors[colorTheme][1], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
-
-        //Render wall
-        wallCanvas.width = localScale+wallMargin;
-        wallCanvas.height = localScale+wallMargin;
-        roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
-            localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
-
-        //Render box
-        boxCanvas.width = localScale+boxMargin;
-        boxCanvas.height = localScale+boxMargin;
-        var size = 0.8;
-        roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
-        localScale * size, localScale * size, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, seed: roughSeed});
-
-        //Render rubble
-        rubbleCanvas.width = localScale+rubbleMargin;
-        rubbleCanvas.height = localScale+rubbleMargin;
-        var size = 1.1;
-        roughRubble.rectangle(rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, 
-        localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", strokeWidth: 2, seed: roughSeed});
-
-        //Render target
-        targetCanvas.width = localScale+targetMargin;
-        targetCanvas.height = localScale+targetMargin;
-        var size = 1.1;
-        roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
-            localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
-
-        //Render level
-        var levelMargin = 20; //In pixels, positive
-        levelCanvas.width = horWidth+levelMargin;
-        levelCanvas.height = verHeight+levelMargin;
-
-        var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX * 0.25;
-        var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY * 0.25;
-
+        var shaking = (camShakeX != 0 || camShakeY != 0)
         var reduceCamShake = 2;
         if (camShakeX > 0) {camShakeX = Math.max(0, camShakeX - reduceCamShake)}
         else if (camShakeX < 0) {camShakeX = Math.min(0, camShakeX + reduceCamShake)}
@@ -248,139 +253,162 @@ function gameLoop() {
         if (camShakeY > 0) {camShakeY = Math.max(0, camShakeY - reduceCamShake)}
         else if (camShakeY < 0) {camShakeY = Math.min(0, camShakeY + reduceCamShake)}
 
-        ctx.globalAlpha = alph;
-        const borderOffset = 5;
-        roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
-            horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
+        var levelMargin = 20; //In pixels, positive
+        if (rerendered || timeSinceUpdatedRenders >= timeToUpdateRenders || timeSinceLastAction <= timeToCompleteTween * 2 || alph != 1 || shaking) {
+            //Render level
+            levelCanvas.width = horWidth+levelMargin;
+            levelCanvas.height = verHeight+levelMargin;
 
-        drawLevel(0, 0, gridWidth, gridHeight, localScale);
-        
-        var clipOffset = 10; //In pixels, positive
-        var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
-        var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
+            drawLevel(0, 0, gridWidth, gridHeight, localScale);
 
-        //Add a little safety padding in case the level wrapping is offset
-        if (levelOffsetX != 0) {screenWidthRatio += 1}
-        if (levelOffsetY != 0) {screenHeightRatio += 1}
-
-        var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
-        var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
-
-        for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
-            for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
-                if (x != 0 || y != 0) 
-                {
-                    ctx.globalAlpha = Math.max(0, alph - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
-                    if (ctx.globalAlpha > 0) {
-                        ctx.drawImage(levelCanvas, 
-                        cameraX + horWidth * x + tweenOffsetX * localScale * y,
-                        cameraY + verHeight * y + tweenOffsetY * localScale * x);
-                    }
-                }
-            }
+            rerendered = true;
         }
 
-        ctx.globalAlpha = alph;
-        ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
-        ctx.globalAlpha = 1;
+        if (rerendered) {
+            //console.log("Triggers only when entire canvas is redrawn");
 
-        //Path
-        /*if (path && path.length != 0) {
-            var drawPath = [[cameraX + levelMargin * 0.5 + (player.x+.5) * localScale, cameraY + levelMargin * 0.5 + (player.y+.5) * localScale]];
-            for(var i = 0; i != path.length; i += 1) {
-                drawPath.push([cameraX + levelMargin * 0.5 + (path[i].x + 0.5 - gridHeight) * localScale, 
-                cameraY + levelMargin * 0.5 + (path[i].y + 0.5 - gridWidth) * localScale]);
-            }
-            //console.log(drawPath)
+            var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX * 0.25;
+            var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY * 0.25;
 
-            roughCanvas.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
-            var last = drawPath[drawPath.length-1]
-            roughCanvas.circle(last[0], last[1], 25, {seed: roughSeed});
-        }*/
+            ctx.globalAlpha = alph;
+            const borderOffset = 5;
+            roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
+                horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
+                
+            var clipOffset = 10; //In pixels, positive
+            var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
+            var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
 
-        //Draw level name
-        drawStroked(levelName, 40, canvas.height - 40);
+            //Add a little safety padding in case the level wrapping is offset
+            if (levelOffsetX != 0) {screenWidthRatio += 1}
+            if (levelOffsetY != 0) {screenHeightRatio += 1}
 
-        ctx.font = "22px sans-serif";
-        ctx.fillStyle = colors[colorTheme][1];
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
+            var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
+            var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
 
-        if (!menuOpened) {
-            if (!victory) {
-            //Menu
-                roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
-                ctx.fillText("[Esc]",50,60);
-
-                //QQQ
-            roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: Lockblocks, Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
-
-                if (level != 0) {
-                    if (!freshState) {
-                        ctx.globalAlpha = 1;
-                    } else {
-                        ctx.globalAlpha = 0.25;
-                    }
-
-                    //Reset
-                    roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
-                    ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
-
-                    if (undoStack.length > 0) {
-                        ctx.globalAlpha = 1;
-                    } else {
-                        ctx.globalAlpha = 0.25;
-                    }
-                    //Undo
-                        roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
-                        ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
-                    }
-                }
-            } else {
-            //Menu bg
-            ctx.globalAlpha = 0.2;
-            ctx.fillStyle = colors[colorTheme][2];
-            ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
 
             ctx.globalAlpha = 1;
-            var width = 400;
-            roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
-        
+            ctx.fillStyle = colors[colorTheme][1];
+            ctx.fillRect(0,0,canvas.width, canvas.height);
+
+            for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
+                for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
+                    if (x != 0 || y != 0) 
+                    {
+                        ctx.globalAlpha = Math.max(0, alph - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
+                        if (ctx.globalAlpha > 0) {
+                            ctx.drawImage(levelCanvas, 
+                            cameraX + horWidth * x + tweenOffsetX * localScale * y,
+                            cameraY + verHeight * y + tweenOffsetY * localScale * x);
+                        }
+                    }
+                }
+            }
+
+            ctx.globalAlpha = alph;
+            ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
+            ctx.globalAlpha = 1;
+
+            //Path
+            /*if (path && path.length != 0) {
+                var drawPath = [[cameraX + levelMargin * 0.5 + (player.x+.5) * localScale, cameraY + levelMargin * 0.5 + (player.y+.5) * localScale]];
+                for(var i = 0; i != path.length; i += 1) {
+                    drawPath.push([cameraX + levelMargin * 0.5 + (path[i].x + 0.5 - gridHeight) * localScale, 
+                    cameraY + levelMargin * 0.5 + (path[i].y + 0.5 - gridWidth) * localScale]);
+                }
+                //console.log(drawPath)
+
+                roughCanvas.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
+                var last = drawPath[drawPath.length-1]
+                roughCanvas.circle(last[0], last[1], 25, {seed: roughSeed});
+            }*/
+
+            //Draw level name
+            drawStroked(levelName, 40, canvas.height - 40);
+
+            ctx.font = "22px sans-serif";
             ctx.fillStyle = colors[colorTheme][1];
             ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
 
-            var textBase = 50;
-            var textOffset = 50;
-            roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+            if (!menuOpened) {
+                if (!victory) {
+                    //Menu
+                    roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                    ctx.fillText("[Esc]",50,60);
 
-            var txt = "Audio: ";
-            if (audioEnabled == true) {
-                txt += "ON";
-            } else {
-                txt += "OFF";
-            }
-            ctx.fillText(txt, width * 0.5,textBase + textOffset * 1);
+                    //QQQ
+                    roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
+                    ctx.fillText("[Todo: Progression, Polish, QA, Saving, 2 more puzzles. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
 
-            ctx.fillText("[Esc] Resume", width * 0.5,textBase);
-            var txt = "Reduce Motion: ";
-            if (reduceMotion == true) {
-                txt += "ON";
-            } else {
-                txt += "OFF";
-            }
-            ctx.fillText(txt, width * 0.5,textBase + textOffset * 2);
+                    if (level != 0) {
+                        if (!freshState) {
+                            ctx.globalAlpha = 1;
+                        } else {
+                            ctx.globalAlpha = 0.25;
+                        }
 
-            txt = "Theme: "+colors[colorTheme][0] + " ("+(colorTheme+1) + "/" + colors.length + ")";
-            ctx.fillText(txt, width * 0.5,textBase + textOffset * 3);
+                        //Reset
+                        roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                        ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
 
-            if (level != 0) {
-                ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
-            } else {
-                ctx.font = "16px sans-serif";
-                ctx.fillText("Game by Tom Hermans for js13k 2020", width * 0.5, textBase + textOffset * 3.8);
-                ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
-                ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
+                        if (undoStack.length > 0) {
+                            ctx.globalAlpha = 1;
+                        } else {
+                            ctx.globalAlpha = 0.25;
+                        }
+                        //Undo
+                            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
+                            ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
+                        }
+                    }
+                } else {
+                //Menu bg
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = colors[colorTheme][2];
+                ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
+
+                ctx.globalAlpha = 1;
+                var width = 400;
+                roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+            
+                ctx.fillStyle = colors[colorTheme][1];
+                ctx.textAlign = "center";
+
+                var textBase = 50;
+                var textOffset = 50;
+                roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+
+                var txt = "Audio: ";
+                if (audioEnabled == true) {
+                    txt += "ON";
+                } else {
+                    txt += "OFF";
+                }
+                ctx.fillText(txt, width * 0.5,textBase + textOffset * 1);
+
+                ctx.fillText("[Esc] Resume", width * 0.5,textBase);
+                var txt = "Reduce Motion: ";
+                if (reduceMotion == true) {
+                    txt += "ON";
+                } else {
+                    txt += "OFF";
+                }
+                ctx.fillText(txt, width * 0.5,textBase + textOffset * 2);
+
+                txt = "Theme: "+colors[colorTheme][0] + " ("+(colorTheme+1) + "/" + colors.length + ")";
+                ctx.fillText(txt, width * 0.5,textBase + textOffset * 3);
+
+                if (level != 0) {
+                    ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
+                } else {
+                    ctx.font = "16px sans-serif";
+                    ctx.fillText("Game by Tom Hermans for js13k 2020", width * 0.5, textBase + textOffset * 3.8);
+                    ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
+                    ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
+                }
             }
         }
     
@@ -564,6 +592,8 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 function input(key) {
     if (victory) {return;}
+
+    dirtyRender = true;
 
     if (key == "Escape") {
         menuOpened = !menuOpened;
@@ -763,10 +793,10 @@ function input(key) {
         } else {
             if (horDelta != 0 || verDelta != 0) {
                 audio("invalid");
+                undoStack.pop(); //Nothing changed, so discard Undo state.
             }
             camShakeX = horDelta * 12;
             camShakeY = verDelta * 12;
-            undoStack.pop(); //Nothing changed, so discard Undo state.
         }
     } else { //Menu input
         var items = 5;
@@ -801,6 +831,7 @@ function input(key) {
                         if (colorTheme >= colors.length) {
                             colorTheme = 0;
                         }
+                        dirtyRender = true;
                     }
                     break;
                 case 4:
@@ -883,6 +914,10 @@ function loadLevel(number, resetStack = true) {
                     break;
                 case obj.SHIFTBOX:
                     boxes.push({x: x, y: y, shift: 3});
+                    break;
+                case obj.SHIFTBOXANDTARGET:
+                    boxes.push({x: x, y: y, shift: 3});
+                    targets.push({x: x, y: y});
                     break;
                 case obj.TARGET:
                     targets.push({x: x, y: y});

@@ -2,14 +2,14 @@ var levels = [];
 levels.push([
     {xOff: 0}, //Level select
     "###...###",
-    "pl.......",
-    "l.l......",
-    ".l..l....",
-    "...l.l...",
-    "....l..l.",
-    "......l.l",
-    "......l.l",
-    ".......l.",
+    "pll......",
+    ".ll......",
+    ".....ll..",
+    ".....ll..",
+    ".lll.....",
+    ".lll.....",
+    "......ll.",
+    "......ll.",
     "###...###",
 ]);
 levels.push([
@@ -154,11 +154,24 @@ levels.push([
 ]);
 levels.push([
     {name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
-    "###...#",
-    ".pb..rt",
+    "###..r#",
+    "tpb..r#",
     "#######"
 ]);
 levels.push([
+    {name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
+    "rrrrrrr",
+    "#t|#|t#",
+    "#|t#t|#",
+    "rrrprrr",
+    "#######",
+    "rrrrrrr",
+    "#t#|#t#",
+    "#|#t#|#",
+    "rrrrrrr",
+    "#######",
+]);
+/*levels.push([
     {name: "Questionable Quaternions", yOff: 2}, //Blueprint of what could be a good idea (that does take up a lotta space though)
     ".....###",
     ".#...#tr",
@@ -169,6 +182,35 @@ levels.push([
     ".#######",
     ".#tt#...",
     ".r||r...",
+]);*/
+levels.push([
+    {name: "Swirling Stars"},
+    "....#r+tr",
+    "b##..r.rb",
+    "b.##..r.b",
+    "..t...p..",
+    "#ttt#rrr#",
+]);
+/*levels.push([
+    {name: "Blockway Breakout V1"}, //I really really like this idea, dDDurrrrddrruLdlUruLLLLLrrrrrddrdLdlUUUruLLLLrrrddddlluRdrUUUruLLLdllUdrruLdlllulllUUluRdrUUUruLLLululuuuU (106)
+    ".b.#.#.b",
+    "..#rpr#.",
+    "##rrtrr#",
+    "...txt..",
+    "##rrtrr#",
+    "..#r.r#.",
+    ".b.#.#.b",
+    "...#.#..",
+]);*/
+levels.push([
+    {name: "Box Breakout"}, //I really really like this idea, drdLLLrruuuUddddllLrrruuuUddddlllLLLulDDDDDuuuurrrrUdllllddddDDrdLLrrluuuurRdRlullddddlLLrrruuuulldLdlUUUluullLLLLDlluRdrUluuruuU (129)
+    "b.#.#.b",
+    ".#rpr#.",
+    "#rrtrr#",
+    "...+...",
+    "#rrtrr#",
+    "1#r.r#1",
+    "b1#.#.b",
 ]);
 /*
 levels.push([
