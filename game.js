@@ -269,11 +269,6 @@ function gameLoop() {
 
             var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX * 0.25;
             var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY * 0.25;
-
-            ctx.globalAlpha = alph;
-            const borderOffset = 5;
-            roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
-                horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
                 
             var clipOffset = 10; //In pixels, positive
             var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
@@ -309,7 +304,10 @@ function gameLoop() {
 
             ctx.globalAlpha = alph;
             ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
-            ctx.globalAlpha = 1;
+            const borderOffset = 5;
+            roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
+                horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
+            ctx.globalAlpha = 1;        
 
             //Path
             /*if (path && path.length != 0) {
