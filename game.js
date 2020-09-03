@@ -115,6 +115,8 @@ var timeSinceLastAudio = 0;
 var menuOpened = false;
 var menuSelection = 0;
 
+//var path = null;
+
 var reduceMotion = false;
 var colors = [];
 colors[0] = ["Sketchbook", "white", "black", "gray", "red"]; //name, bg, main, in-between, contrast
@@ -298,7 +300,7 @@ function gameLoop() {
 
                 //QQQ
             roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: "solid", fillWeight: 4, seed: 1});
-            ctx.fillText("[Todo: Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+            ctx.fillText("[Todo: A*, Polish, Saving, 20 Puzzles, Player target. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
 
                 if (level != 0) {
                     if (!freshState) {
@@ -482,6 +484,19 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
             levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
         }
     }
+
+    //Path
+    /*if (path && path.length != 0) {
+        var drawPath = [[PosX(player.x)+ localScale * 0.5, PosY(player.y) + localScale * 0.5]];
+        for(var i = 0; i != path.length; i += 1) {
+            drawPath.push([PosY(path[i].x) + localScale * 0.5, PosX(path[i].y) + localScale * 0.5]);
+        }
+        //console.log(drawPath)
+
+        roughLevel.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
+        var last = drawPath[drawPath.length-1]
+        roughLevel.circle(last[0], last[1], 25, {seed: roughSeed});
+    }*/
 
     function tweenPlayer() {
         if (undoStack.length > 0) {
@@ -706,6 +721,8 @@ function input(key) {
             }
             timeSinceLastAction = 0;
 
+            //pathFinding(1, 1);
+
             prevHorDelta = horDelta;
             prevVerDelta = verDelta;
 
@@ -811,6 +828,8 @@ function loadLevel(number, resetStack = true) {
 
     camShakeX = 0;
     camShakeY = 0;
+
+    //path = null;
 
     freshState = true;
 
@@ -983,6 +1002,41 @@ function drawStroked(text, x, y) {
     ctx.fillStyle = colors[colorTheme][1];
     ctx.fillText(text, x, y);
 }
+
+/*function pathFinding(targetX, targetY) {
+    //Make 3x3 grid
+    var grid = [];
+    for(var xx = 0; xx != 3; xx += 1) {
+        for(var x = 0; x != gridWidth; x += 1) {
+            grid.push([]);
+            for(var yy = 0; yy != 3; yy += 1) {
+                for(var y = 0; y != gridHeight; y += 1) {
+                    if (hasBox(x,y) !== null || hasWall(x,y) !== null) {
+                        grid[x].push(0);
+                    } else {
+                        grid[x].push(1);
+                    }
+                }
+            }
+        }
+    }
+
+    //Apply level offset
+    if (levelOffsetX != 0 || levelOffsetY != 0) {
+        var bigGrid = [];
+    }
+
+    console.log(grid);
+
+    var graph = new Graph(grid);
+    var start = graph.grid[(player.x)][(player.y)];
+    console.log("Start",start);
+    var end = graph.grid[targetX][targetY];
+    var result = astar.search(graph, start, end);
+
+    console.log("Result",result);
+    path = result;
+}*/
 
 function audio(soundID, alwaysPlay = false) {
     if (!audioEnabled) {return;}
