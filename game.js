@@ -330,7 +330,7 @@ function gameLoop() {
         var levelMargin = 20; //In pixels, positive
         if (rerendered || timeSinceUpdatedRenders >= timeToUpdateRenders || timeSinceLastAction <= timeToCompleteTween * 2 || alph != 1 || shaking) {
             //Render level
-            if (localScale != previousScale) {
+            if (localScale != previousScale || dirtyRender) {
                 levelCanvas.width = horWidth+levelMargin;
                 levelCanvas.height = verHeight+levelMargin;
             } else {
@@ -346,8 +346,8 @@ function gameLoop() {
         if (rerendered) {
             //console.log("Triggers only when entire canvas is redrawn");
 
-            var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5) + camShakeX * 0.25;
-            var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5) + camShakeY * 0.25;
+            var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5 + camShakeX * 0.25);
+            var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5+ camShakeY * 0.25);
                 
             var clipOffset = 10; //In pixels, positive
             var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
@@ -381,7 +381,7 @@ function gameLoop() {
             ctx.globalAlpha = alph;
             ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
             const borderOffset = 5;
-            roughCanvas.rectangle(cameraX-borderOffset + camShakeX * 0.5, cameraY-borderOffset + camShakeY * 0.5, 
+            roughCanvas.rectangle(Math.round(cameraX-borderOffset + camShakeX * 0.5), Math.round(cameraY-borderOffset + camShakeY * 0.5), 
                 horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
             ctx.globalAlpha = 1;        
 
@@ -694,12 +694,14 @@ function input(key) {
             loadLevel(Math.max(level - 1, 0 ));
             return;
         } else if (key == " " || key == "x" || key == "X" || key == "Enter") {
-            var lvl = hasLevelNode(player.x, player.y)
-            if (lvl != null) {
-                targetLevel = levelNodes[lvl].target;
-                victory = true;
-                timeSinceLevelWon = 0;
-                audio("invalid");
+            if (timeSinceLevelStart >= timeToLoadLevel) {
+                var lvl = hasLevelNode(player.x, player.y)
+                if (lvl != null) {
+                    targetLevel = levelNodes[lvl].target;
+                    victory = true;
+                    timeSinceLevelWon = 0;
+                    audio("invalid");
+                }
             }
         }
     } else { //Menu input
