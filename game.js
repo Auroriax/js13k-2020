@@ -165,44 +165,46 @@ function gameLoop() {
         undoInput.update();
 
         //Input
-        if (!menuOpened) {
-            if (verticalInput.fired) {
-                MovePlayer(0, verticalInput.delta);
-            }
-            if (horizontalInput.fired) {
-                MovePlayer(horizontalInput.delta, 0);
-            }
-            if (undoInput.fired == true && undoStack.length != 0) {
-                audio("undo");
-
-                var stateToRestore = undoStack.pop();
-
-                player = stateToRestore.player;
-                boxes = stateToRestore.boxes;
-                levelOffsetX = stateToRestore.xOff;
-                levelOffsetY = stateToRestore.yOff;
-
-                steps = steps.slice(0, -1);
-                if (steps.length == 0 || steps.slice(-1) == " ") {
-                    freshState = true;
-                } else {
-                    freshState = false;
+        if (!victory) {
+            if (!menuOpened) {
+                if (verticalInput.fired) {
+                    MovePlayer(0, verticalInput.delta);
                 }
+                if (horizontalInput.fired) {
+                    MovePlayer(horizontalInput.delta, 0);
+                }
+                if (undoInput.fired == true && undoStack.length != 0) {
+                    audio("undo");
 
-                if (level == 0) {
-                    var lvl = hasLevelNode(player.x, player.y);
-                    if (lvl != null) {
-                        levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                    var stateToRestore = undoStack.pop();
+
+                    player = stateToRestore.player;
+                    boxes = stateToRestore.boxes;
+                    levelOffsetX = stateToRestore.xOff;
+                    levelOffsetY = stateToRestore.yOff;
+
+                    steps = steps.slice(0, -1);
+                    if (steps.length == 0 || steps.slice(-1) == " ") {
+                        freshState = true;
                     } else {
-                        levelName = "";
+                        freshState = false;
                     }
+
+                    if (level == 0) {
+                        var lvl = hasLevelNode(player.x, player.y);
+                        if (lvl != null) {
+                            levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                        } else {
+                            levelName = "";
+                        }
+                    }
+
+                    timeSinceLastAction = timeToCompleteTween;
+
+                    console.warn("Popped the undo stack, remaining entries:", undoStack.length);
+
+                    dirtyRender = true;
                 }
-
-                timeSinceLastAction = timeToCompleteTween;
-
-                console.warn("Popped the undo stack, remaining entries:", undoStack.length);
-
-                dirtyRender = true;
             }
         }
 
