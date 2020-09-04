@@ -137,8 +137,13 @@ var dirtyRender = false; //Change when theme was changed.
 var previousScale = 0;
 
 window.onresize = function() {
+    canvas.width = canvas.clientWidth;
+    canvas.height = canvas.clientHeight;
     dirtyRender = true;
 }
+
+canvas.width = canvas.clientWidth;
+canvas.height = canvas.clientHeight;
 
 var levelSolved = [];
 for(var i = 0; i != levels.length; i += 1) {
@@ -280,9 +285,6 @@ function gameLoop() {
 
             var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
             var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
-
-            canvas.width = canvas.clientWidth;
-            canvas.height = canvas.clientHeight;
 
             ctx.globalAlpha = 1;
             ctx.fillStyle = colors[colorTheme][1];
