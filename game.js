@@ -417,7 +417,7 @@ function gameLoop() {
                     //QQQ
                     roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
                     ctx.fillText("[Todo: Progression, Polish, QA, Saving, 2 more puzzles. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
-
+ 
                     if (level != 0) {
                         if (!freshState) {
                             ctx.globalAlpha = 1;
