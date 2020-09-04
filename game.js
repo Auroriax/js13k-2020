@@ -663,12 +663,12 @@ function input(key) {
         var dir = "";
 
         var horDelta = 0; 
-        if (key == "ArrowLeft" || key == "a" || key == "q") {horDelta = -1; dir = "l"}
-        if (key == "ArrowRight" || key == "d") {horDelta = 1; dir = "r"}
+        if (key == "ArrowLeft" || key == "a" || key == "A") {horDelta = -1; dir = "l"}
+        if (key == "ArrowRight" || key == "d" || key == "D") {horDelta = 1; dir = "r"}
 
         var verDelta = 0;
-        if (key == "ArrowDown" || key == "s") {verDelta = 1; dir = "d"}
-        if (key == "ArrowUp" || key == "w") {verDelta = -1; dir = "u"}
+        if (key == "ArrowDown" || key == "s" || key == "S") {verDelta = 1; dir = "d"}
+        if (key == "ArrowUp" || key == "w" || key == "W") {verDelta = -1; dir = "u"}
 
         console.log("------");
 
