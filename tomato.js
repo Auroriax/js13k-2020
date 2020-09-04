@@ -94,23 +94,39 @@ function PointInRectangle(point, hitbox) {
 		&& point.y > hitbox.origin.y && point.y < hitbox.origin.y + hitbox.height )
 }
 
-///INPUT
-/*class InputHandler {
-	constructor(positiveKeys, negativeKeys = null, timer = null, timeForRefiring = 0) {
+const pressedState = {
+	IDLE: 0,
+	PRESSED: 1,
+	HELD: 2,
+	RELEASED: 3
+}; //all lowercase if applicable!
+
+//INPUT
+class InputHandler {
+	constructor(positiveKeys, negativeKeys = null, timer = null, timeForRefiring = 0, extraTimeForFirstRefire = 0) {
 		this.delta = 0;
 		this.posKeysHeld = [];
 		this.negKeysHeld = [];
 		this.timer = timer;
+		this.prevHeldTime = 0;
 		this.heldTime = 0;
+
 		this.waitForRefiring = timeForRefiring;
-		this.fired = false;
+		this.firstWaitForRefiring = timeForRefiring + extraTimeForFirstRefire;
+		this.timeSinceLastRefire = 0;
+		this.timesFired = 0;
+
+		this.state = pressedState.IDLE;
 
 		if (positiveKeys) {
 			positiveKeys.forEach((element) => {
 				window.addEventListener('keydown', (event) => {
 					if (this.change(event, element)) {
-						this.posKeysHeld = PushUnique(this.posKeysHeld, element);
-						this.updateDelta();
+						var push = PushUnique(this.posKeysHeld, element);
+						if (push.changed) {
+							this.posKeysHeld = push.array;
+							this.updateDelta();
+						}
 					}
 				});
 				window.addEventListener('keyup', (event) => {
@@ -127,8 +143,11 @@ function PointInRectangle(point, hitbox) {
 			negativeKeys.forEach((element) => {
 				window.addEventListener('keydown', (event) => {
 					if (this.change(event, element)) {
-						this.negKeysHeld = PushUnique(this.negKeysHeld, element);
-						this.updateDelta();
+						var push = PushUnique(this.negKeysHeld, element);
+						if (push.changed) {
+							this.negKeysHeld = push.array;
+							this.updateDelta();
+						}
 					}
 				});
 				window.addEventListener('keyup', (event) => {
@@ -151,29 +170,57 @@ function PointInRectangle(point, hitbox) {
 		if (diff > 0 && this.delta != 1) {
 			this.delta = 1;
 			this.heldTime = 0;
+			this.timesFired = 0;
+			this.timeSinceLastRefire = 0;
 		} else if (diff < 0 && this.delta != -1) {
 			this.delta = -1;
 			this.heldTime = 0;
+			this.timesFired = 0;
+			this.timeSinceLastRefire = 0;
 		} else if (this.delta != 0) {
 			this.delta = 0;
 			this.heldTime = 0;
+			this.timesFired = 0;
+			this.timeSinceLastRefire = 0;
 		}
 	}
 
 	update() {
 		if (this.timer && this.delta != 0) {
-			var prevHeldTime = this.heldTime;
 			this.heldTime += this.timer.currentFrameLength;
-			console.log(this.heldTime);
+			this.timeSinceLastRefire += this.timer.currentFrameLength;
 
-			if (prevHeldTime == 0 || (prevHeldTime % this.waitForRefiring > this.heldTime % this.waitForRefiring)) {
+			if (this.prevHeldTime == 0 || (this.timesFired > 1 && this.timeSinceLastRefire >= this.waitForRefiring) || (this.timesFired <= 1 && this.timeSinceLastRefire >= this.firstWaitForRefiring)) {
 				this.fired = true;
+				this.timesFired += 1;
+				this.timeSinceLastRefire = 0;
 			} else {
 				this.fired = false;
 			}
+		} else {
+			this.fired = false;
 		}
+
+		//Set state
+		if (this.delta == 0) {
+			if (this.prevHeldTime != 0) {
+				this.state = pressedState.RELEASED;
+			} else {
+				this.state = pressedState.IDLE;
+			}
+		} else {
+			if (this.prevHeldTime == 0) {
+				this.state = pressedState.PRESSED;
+			} else {
+				this.state = pressedState.HELD;
+			}
+		}
+
+		this.prevHeldTime = this.heldTime;
+
+		//console.log("State: " + this.state + " Fired: " + this.timeSinceLastRefire);
 	}
-}*/
+}
 
 
 ///MISC
@@ -182,8 +229,12 @@ function Clamp(nr, min, max) {
 }
 
 function PushUnique(array, newEntry) {
-	if (array.indexOf(newEntry) === -1) array.push(newEntry);
-	return array;
+	var changed = false;
+	if (array.indexOf(newEntry) === -1) {
+		array.push(newEntry);
+		changed = true;
+	}
+	return {array: array, changed: changed};
 }
 
 function SpliceUnique(array, EntryToSplice) {

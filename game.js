@@ -17,21 +17,21 @@ const roughWall = rough.canvas(wallCanvas);
 const wallMargin = 10;
 
 const playerCanvas = document.createElement("canvas");
-const PlayerCtx = wallCanvas.getContext("2d");
+const PlayerCtx = playerCanvas.getContext("2d");
 const roughPlayer = rough.canvas(playerCanvas);
 
 const boxCanvas = document.createElement("canvas");
-const boxCtx = wallCanvas.getContext("2d");
+const boxCtx = boxCanvas.getContext("2d");
 const roughBox = rough.canvas(boxCanvas);
 const boxMargin = 10;
 
 const targetCanvas = document.createElement("canvas");
-const targetCtx = wallCanvas.getContext("2d");
+const targetCtx = targetCanvas.getContext("2d");
 const roughTarget = rough.canvas(targetCanvas);
 const targetMargin = 15;
 
 const rubbleCanvas = document.createElement("canvas");
-const rubbleCtx = wallCanvas.getContext("2d");
+const rubbleCtx = rubbleCanvas.getContext("2d");
 const roughRubble = rough.canvas(rubbleCanvas);
 const rubbleMargin = 15;
 
@@ -117,6 +117,10 @@ var timeSinceLastAudio = 0;
 var menuOpened = false;
 var menuSelection = 0;
 
+var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.3);
+var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.3);
+var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.3);
+
 //var path = null;
 
 var reduceMotion = false;
@@ -156,7 +160,53 @@ function gameLoop() {
     try {
         //Init
         timing.update();
+        horizontalInput.update();
+        verticalInput.update();
+        undoInput.update();
 
+        //Input
+        if (!menuOpened) {
+            if (verticalInput.fired) {
+                MovePlayer(0, verticalInput.delta);
+            }
+            if (horizontalInput.fired) {
+                MovePlayer(horizontalInput.delta, 0);
+            }
+            if (undoInput.fired == true && undoStack.length != 0) {
+                audio("undo");
+
+                var stateToRestore = undoStack.pop();
+
+                player = stateToRestore.player;
+                boxes = stateToRestore.boxes;
+                levelOffsetX = stateToRestore.xOff;
+                levelOffsetY = stateToRestore.yOff;
+
+                steps = steps.slice(0, -1);
+                if (steps.length == 0 || steps.slice(-1) == " ") {
+                    freshState = true;
+                } else {
+                    freshState = false;
+                }
+
+                if (level == 0) {
+                    var lvl = hasLevelNode(player.x, player.y);
+                    if (lvl != null) {
+                        levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                    } else {
+                        levelName = "";
+                    }
+                }
+
+                timeSinceLastAction = timeToCompleteTween;
+
+                console.warn("Popped the undo stack, remaining entries:", undoStack.length);
+
+                dirtyRender = true;
+            }
+        }
+
+        //Rendering
         timeSinceLastAction += timing.currentFrameLength;
         timeSinceUpdatedRenders += timing.currentFrameLength;
         timeSinceLevelStart += timing.currentFrameLength;
@@ -206,48 +256,67 @@ function gameLoop() {
         if ((!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) || localScale != previousScale || dirtyRender) {
             if (!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) {
                 roughSeed += 1;
+                timeSinceUpdatedRenders = 0;
             }
 
             rerendered = true;
-
-            previousScale = localScale;
             dirtyRender = false;
-            timeSinceUpdatedRenders = 0;
+
+            if (localScale != previousScale) {
+                playerCanvas.width = localScale;
+                playerCanvas.height = localScale;
+
+                wallCanvas.width = localScale+wallMargin;
+                wallCanvas.height = localScale+wallMargin;
+
+                boxCanvas.width = localScale+boxMargin;
+                boxCanvas.height = localScale+boxMargin;
+
+                rubbleCanvas.width = localScale+rubbleMargin;
+                rubbleCanvas.height = localScale+rubbleMargin;
+
+                targetCanvas.width = localScale+targetMargin;
+                targetCanvas.height = localScale+targetMargin;
+            } else {
+                PlayerCtx.clearRect(0,0, playerCanvas.width, playerCanvas.height);
+                PlayerCtx.beginPath();
+
+                wallCtx.clearRect(0,0, wallCanvas.width, wallCanvas.height);
+                wallCtx.beginPath();
+                
+                boxCtx.clearRect(0,0, boxCanvas.width, boxCanvas.height);
+                boxCtx.beginPath();
+
+                rubbleCtx.clearRect(0,0, rubbleCanvas.width, rubbleCanvas.height);
+                rubbleCtx.beginPath();
+
+                targetCtx.clearRect(0,0, targetCanvas.width, targetCanvas.height);
+                targetCtx.beginPath();
+            }
 
             //Render player
-            playerCanvas.width = localScale;
-            playerCanvas.height = localScale;
             var size = 0.8;
             roughPlayer.circle(localScale * .5, localScale * .5,
                 localScale * size, {fill: colors[colorTheme][1], fillStyle: "solid", stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
             //Render wall
-            wallCanvas.width = localScale+wallMargin;
-            wallCanvas.height = localScale+wallMargin;
             roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
                 localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
             //Render box
-            boxCanvas.width = localScale+boxMargin;
-            boxCanvas.height = localScale+boxMargin;
             var size = 0.8;
             roughBox.rectangle(boxMargin * 0.5 + (1-size) * 0.5 * localScale, boxMargin * 0.5 + (1-size) * 0.5 * localScale, 
             localScale * size, localScale * size, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, seed: roughSeed});
 
             //Render rubble
-            rubbleCanvas.width = localScale+rubbleMargin;
-            rubbleCanvas.height = localScale+rubbleMargin;
             var size = 1.1;
             roughRubble.rectangle(rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, rubbleMargin * 0.5 + (1-size) * 0.5 * localScale, 
             localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", fillWeight: localScale / 70, strokeWidth: 2, seed: roughSeed});
 
             //Render target
-            targetCanvas.width = localScale+targetMargin;
-            targetCanvas.height = localScale+targetMargin;
             var size = 1.1;
             roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
                 localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
-
         }
 
         var shaking = (camShakeX != 0 || camShakeY != 0)
@@ -261,8 +330,13 @@ function gameLoop() {
         var levelMargin = 20; //In pixels, positive
         if (rerendered || timeSinceUpdatedRenders >= timeToUpdateRenders || timeSinceLastAction <= timeToCompleteTween * 2 || alph != 1 || shaking) {
             //Render level
-            levelCanvas.width = horWidth+levelMargin;
-            levelCanvas.height = verHeight+levelMargin;
+            if (localScale != previousScale) {
+                levelCanvas.width = horWidth+levelMargin;
+                levelCanvas.height = verHeight+levelMargin;
+            } else {
+                levelCtx.clearRect(0,0, levelCanvas.width, levelCanvas.height);
+                levelCtx.beginPath();
+            }
 
             drawLevel(0, 0, gridWidth, gridHeight, localScale);
 
@@ -413,6 +487,7 @@ function gameLoop() {
             }
         }
     
+        previousScale = localScale;
         window.requestAnimationFrame(gameLoop);
     }
     catch (e) {
@@ -605,7 +680,7 @@ function input(key) {
     }
 
     if (!menuOpened) {
-        if (key == "r") {
+        if (key == "r" || key == "R") {
             if (!freshState) {
                 audio("restart");
                 undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY});
@@ -618,39 +693,7 @@ function input(key) {
         } else if (key == "-") {
             loadLevel(Math.max(level - 1, 0 ));
             return;
-        } else if (key == "z") {
-            if (undoStack.length != 0) {
-                audio("undo");
-
-                var stateToRestore = undoStack.pop();
-
-                player = stateToRestore.player;
-                boxes = stateToRestore.boxes;
-                levelOffsetX = stateToRestore.xOff;
-                levelOffsetY = stateToRestore.yOff;
-
-                steps = steps.slice(0, -1);
-                if (steps.length == 0 || steps.slice(-1) == " ") {
-                    freshState = true;
-                } else {
-                    freshState = false;
-                }
-
-                if (level == 0) {
-                    var lvl = hasLevelNode(player.x, player.y);
-                    if (lvl != null) {
-                        levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
-                    } else {
-                        levelName = "";
-                    }
-                }
-
-                timeSinceLastAction = timeToCompleteTween;
-
-                console.warn("Popped the undo stack, remaining entries:", undoStack.length);
-            }
-            return;
-        } else if (key == " " || key == "x" || key == "Enter") {
+        } else if (key == " " || key == "x" || key == "X" || key == "Enter") {
             var lvl = hasLevelNode(player.x, player.y)
             if (lvl != null) {
                 targetLevel = levelNodes[lvl].target;
@@ -659,159 +702,19 @@ function input(key) {
                 audio("invalid");
             }
         }
-
-        var dir = "";
-
-        var horDelta = 0; 
-        if (key == "ArrowLeft" || key == "a" || key == "A") {horDelta = -1; dir = "l"}
-        if (key == "ArrowRight" || key == "d" || key == "D") {horDelta = 1; dir = "r"}
-
-        var verDelta = 0;
-        if (key == "ArrowDown" || key == "s" || key == "S") {verDelta = 1; dir = "d"}
-        if (key == "ArrowUp" || key == "w" || key == "W") {verDelta = -1; dir = "u"}
-
-        console.log("------");
-
-        if (horDelta != 0 || verDelta != 0) {
-            undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
-
-            var movementResolved = false;
-            var boxPushed = false;
-
-            prevLevelOffsetX = 0;
-            prevLevelOffsetY = 0;
-
-            var target = wrapCoords(player.x + horDelta, player.y + verDelta);
-            var targetX = target.x;
-            var targetY = target.y;
-
-            console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
-
-            let foundBox = hasBox(targetX, targetY);
-            console.log("fb: "+foundBox);
-            if (foundBox !== null) {
-                var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
-                let boxTargetX = boxTarget.x;
-                let boxTargetY = boxTarget.y;
-
-                //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
-                //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
-                if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null && hasRubble(boxTargetX, boxTargetY) === null) {
-                    boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
-                    player = {x: targetX, y: targetY};
-                    movementResolved = true;
-                    boxPushed = true;
-
-                    if (boxes[foundBox].shift != 0) {
-                        if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal/x
-                            if (levelOffsetY == 0) {
-                                levelOffsetX -= horDelta;
-                                prevLevelOffsetX = -horDelta;
-                                timeSinceLastAction = 0;
-                                if (levelOffsetX >= gridWidth * 0.5) {
-                                    levelOffsetX -= gridWidth;
-                                } else if (levelOffsetX <= -gridWidth * 0.5) {
-                                    levelOffsetX += gridWidth;
-                                }
-                            } else {
-                                console.log("Shifting not resolved: Cannot shift X when Y is shifted")
-                            }
-                        }
-                        
-                        if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical/y
-                            if (levelOffsetX == 0) {
-                                levelOffsetY -= verDelta;
-                                prevLevelOffsetY = -verDelta;
-                                timeSinceLastAction = 0;
-                                if (levelOffsetY >= gridHeight * 0.5) {
-                                    levelOffsetY -= gridHeight;
-                                } else if (levelOffsetY <= -gridHeight * 0.5) {
-                                    levelOffsetY += gridHeight;
-                                }
-                            } else {
-                                console.log("Shifting not resolved: Cannot shift Y when X is shifted")
-                            }
-                        }
-                    }
-                } else {
-                    console.log("Movement not resolved","Could not push box");
-                }
-            }
-            else if (hasWall(targetX, targetY) === null) {
-                player = {x: targetX, y: targetY};
-                movementResolved = true;
-            } else {
-                console.log("Movement not resolved","Something was in the way");
-            }
-        }
-
-        if (movementResolved) {
-            if (!boxPushed) {
-                steps += dir;
-            } else {
-                steps += dir.toUpperCase();
-            }
-            timeSinceLastAction = 0;
-
-            //pathFinding(1, 2);
-
-            prevHorDelta = horDelta;
-            prevVerDelta = verDelta;
-
-            freshState = false;
-
-            if (level == 0) {
-                var lvl = hasLevelNode(player.x, player.y);
-                if (lvl != null) {
-                    levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
-                } else {
-                    levelName = "";
-                }
-            }
-
-            //Check if won
-            var hasWon = true;
-            if (targets.length > 0) {
-                for(let i = 0; i != targets.length; i++) {
-                    if (hasBox(targets[i].x, targets[i].y) === null) {
-                        hasWon = false; break;
-                    }
-                }
-            } else {
-                hasWon = false;
-            }
-
-            if (hasWon) {
-                console.warn("Victory!",steps + " (" + steps.length + ")");
-                levelSolved[level] = true;
-
-                audio("victory", true);
-                victory = true;
-                timeSinceLevelWon = 0;
-            } else {
-                audio("walk");
-            }
-        } else {
-            if (horDelta != 0 || verDelta != 0) {
-                audio("invalid");
-                undoStack.pop(); //Nothing changed, so discard Undo state.
-            }
-            camShakeX = horDelta * 12;
-            camShakeY = verDelta * 12;
-        }
     } else { //Menu input
         var items = 5;
         if (level == 0) {
             items = 4;
         }
 
-        if (key == "ArrowDown" || key == "s") {
+        if (key == "ArrowDown" || key == "s" || key == "S") {
             menuSelection += 1; if (menuSelection >= items) {menuSelection = 0;}
         }
-        else if (key == "ArrowUp" || key == "w") {
+        else if (key == "ArrowUp" || key == "w" || key == "W") {
             menuSelection -= 1; if (menuSelection < 0) {menuSelection = items-1;}
         }
-        else if (key == " " || key == "x" || key == "Enter") {
+        else if (key == " " || key == "x" || key == "X" || key == "Enter") {
             switch(menuSelection) {
                 case 0: 
                     menuOpened = !menuOpened;
@@ -1122,6 +1025,146 @@ function drawStroked(text, x, y) {
     console.log("Winning Result",winningPath);
     path = winningPath;
 }*/
+
+function MovePlayer(horDelta, verDelta) {
+    var dir = "";
+
+    if (horDelta == -1) {dir = "l"}
+    else if (horDelta == 1) {dir = "r"}
+    else if (verDelta == 1) {dir = "d"}
+    else if (verDelta == -1) {dir = "u"}
+    else {throw new Error("MovePlayer function did not recieve valid inputs.")}
+
+    console.log("------");
+
+    if (horDelta != 0 || verDelta != 0) {
+        undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
+
+        var movementResolved = false;
+        var boxPushed = false;
+
+        prevLevelOffsetX = 0;
+        prevLevelOffsetY = 0;
+
+        var target = wrapCoords(player.x + horDelta, player.y + verDelta);
+        var targetX = target.x;
+        var targetY = target.y;
+
+        console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
+
+        let foundBox = hasBox(targetX, targetY);
+        console.log("fb: "+foundBox);
+        if (foundBox !== null) {
+            var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
+            let boxTargetX = boxTarget.x;
+            let boxTargetY = boxTarget.y;
+
+            //console.log("bx: "+boxTargetX+" by:"+boxTargetY);
+            //console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
+            if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null && hasRubble(boxTargetX, boxTargetY) === null) {
+                boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
+                player = {x: targetX, y: targetY};
+                movementResolved = true;
+                boxPushed = true;
+
+                if (boxes[foundBox].shift != 0) {
+                    if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal/x
+                        if (levelOffsetY == 0) {
+                            levelOffsetX -= horDelta;
+                            prevLevelOffsetX = -horDelta;
+                            timeSinceLastAction = 0;
+                            if (levelOffsetX >= gridWidth * 0.5) {
+                                levelOffsetX -= gridWidth;
+                            } else if (levelOffsetX <= -gridWidth * 0.5) {
+                                levelOffsetX += gridWidth;
+                            }
+                        } else {
+                            console.log("Shifting not resolved: Cannot shift X when Y is shifted")
+                        }
+                    }
+                    
+                    if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical/y
+                        if (levelOffsetX == 0) {
+                            levelOffsetY -= verDelta;
+                            prevLevelOffsetY = -verDelta;
+                            timeSinceLastAction = 0;
+                            if (levelOffsetY >= gridHeight * 0.5) {
+                                levelOffsetY -= gridHeight;
+                            } else if (levelOffsetY <= -gridHeight * 0.5) {
+                                levelOffsetY += gridHeight;
+                            }
+                        } else {
+                            console.log("Shifting not resolved: Cannot shift Y when X is shifted")
+                        }
+                    }
+                }
+            } else {
+                console.log("Movement not resolved","Could not push box");
+            }
+        }
+        else if (hasWall(targetX, targetY) === null) {
+            player = {x: targetX, y: targetY};
+            movementResolved = true;
+        } else {
+            console.log("Movement not resolved","Something was in the way");
+        }
+    }
+
+    if (movementResolved) {
+        if (!boxPushed) {
+            steps += dir;
+        } else {
+            steps += dir.toUpperCase();
+        }
+        timeSinceLastAction = 0;
+
+        //pathFinding(1, 2);
+
+        prevHorDelta = horDelta;
+        prevVerDelta = verDelta;
+
+        freshState = false;
+
+        if (level == 0) {
+            var lvl = hasLevelNode(player.x, player.y);
+            if (lvl != null) {
+                levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+            } else {
+                levelName = "";
+            }
+        }
+
+        //Check if won
+        var hasWon = true;
+        if (targets.length > 0) {
+            for(let i = 0; i != targets.length; i++) {
+                if (hasBox(targets[i].x, targets[i].y) === null) {
+                    hasWon = false; break;
+                }
+            }
+        } else {
+            hasWon = false;
+        }
+
+        if (hasWon) {
+            console.warn("Victory!",steps + " (" + steps.length + ")");
+            levelSolved[level] = true;
+
+            audio("victory", true);
+            victory = true;
+            timeSinceLevelWon = 0;
+        } else {
+            audio("walk");
+        }
+    } else {
+        if (horDelta != 0 || verDelta != 0) {
+            audio("invalid");
+            undoStack.pop(); //Nothing changed, so discard Undo state.
+        }
+        camShakeX = horDelta * 12;
+        camShakeY = verDelta * 12;
+    }
+}
 
 function audio(soundID, alwaysPlay = false) {
     if (!audioEnabled) {return;}
