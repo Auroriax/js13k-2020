@@ -326,6 +326,7 @@ function gameLoop() {
             }*/
 
             //Draw level name
+            ctx.textAlign = "left";
             drawStroked(levelName, 40, canvas.height - 40);
 
             ctx.font = "22px sans-serif";
