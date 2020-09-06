@@ -116,6 +116,7 @@ var timeSinceLastAudio = 0;
 
 var menuOpened = false;
 var menuSelection = 0;
+var titleScreen = true;
 
 var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.3);
 var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.3);
@@ -154,6 +155,8 @@ for(var i = 0; i != levels.length; i += 1) {
     levelSolved[i] = false; //QQQ
 }
 
+loadGame();
+
 loadLevel(level);
 
 function gameLoop() {
@@ -165,7 +168,7 @@ function gameLoop() {
         undoInput.update();
 
         //Input
-        if (!victory) {
+        if (!victory && !titleScreen) {
             if (!menuOpened) {
                 if (verticalInput.fired) {
                     MovePlayer(0, verticalInput.delta);
@@ -194,6 +197,8 @@ function gameLoop() {
                         var lvl = hasLevelNode(player.x, player.y);
                         if (lvl != null) {
                             levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+                        } else if (!levelSolved.includes(true)) {
+                            levelName = "WASD/Arrow Keys to move";
                         } else {
                             levelName = "";
                         }
@@ -345,7 +350,7 @@ function gameLoop() {
             rerendered = true;
         }
 
-        if (rerendered) {
+        if (rerendered || titleScreen) {
             //console.log("Triggers only when entire canvas is redrawn");
 
             var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5 + camShakeX * 0.25);
@@ -401,16 +406,50 @@ function gameLoop() {
                 roughCanvas.circle(last[0], last[1], 25, {seed: roughSeed});
             }*/
 
+            //Draw rectangle
+            if (titleScreen || menuOpened) {
+                //Menu bg
+                ctx.globalAlpha = 0.2;
+                ctx.fillStyle = colors[colorTheme][2];
+                ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
+                ctx.globalAlpha = 1;
+            }
+
             //Draw level name
-            ctx.textAlign = "left";
-            drawStroked(levelName, 40, canvas.height - 40);
+            if (!titleScreen) {
+                ctx.textAlign = "left";
+                ctx.font = "40px sans-serif";
+                drawStroked(levelName, 40, canvas.height - 40);
+            }
 
             ctx.font = "22px sans-serif";
             ctx.fillStyle = colors[colorTheme][1];
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            if (!menuOpened) {
+            //Draw title screen QQQ
+            if (titleScreen) {
+                ctx.font = Math.round(scale * 1.2) + "px sans-serif";
+                ctx.textAlign = "left";
+                ctx.textBaseline = "center";
+                ctx.fillStyle = "black";
+
+                var txt = "Ban";
+
+                var textWidth = ctx.measureText(txt).width;
+                var amount = Math.ceil(canvas.width / textWidth)+1;
+
+                txt = txt.repeat(amount);
+
+                var startX = (timing.timePlaying % 2) / 2;
+
+                drawStroked(txt,-startX * textWidth,canvas.height * .5);
+
+                ctx.font = Math.round(scale * 0.5) + "px sans-serif";
+                ctx.textAlign = "center";
+                drawStroked("Press any key",canvas.width * .5,canvas.height * .6);
+            }
+            else if (!menuOpened) {
                 if (!victory) {
                     //Menu
                     roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
@@ -418,7 +457,7 @@ function gameLoop() {
 
                     //QQQ
                     roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
-                    ctx.fillText("[Todo: Progression, Polish, QA, Saving, 2 more puzzles. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+                    ctx.fillText("[Todo: Progression, Polish, HTTP Codes, QA, 2 more puzzles. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
  
                     if (level != 0) {
                         if (!freshState) {
@@ -442,11 +481,6 @@ function gameLoop() {
                         }
                     }
                 } else {
-                //Menu bg
-                ctx.globalAlpha = 0.2;
-                ctx.fillStyle = colors[colorTheme][2];
-                ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
-
                 ctx.globalAlpha = 1;
                 var width = 400;
                 roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
@@ -670,6 +704,10 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 function input(key) {
     if (victory) {return;}
+    if (titleScreen) {
+        titleScreen = false;
+        return;
+    }
 
     dirtyRender = true;
 
@@ -690,10 +728,10 @@ function input(key) {
             }
             return;
         } else if (key == "+") {
-            loadLevel(Math.min(level + 1, levels.length-1 ));
+            loadLevel(Math.min(level + 1, levels.length-1 )); //QQQ
             return;
         } else if (key == "-") {
-            loadLevel(Math.max(level - 1, 0 ));
+            loadLevel(Math.max(level - 1, 0 )); //QQQ
             return;
         } else if (key == " " || key == "x" || key == "X" || key == "Enter") {
             if (timeSinceLevelStart >= timeToLoadLevel) {
@@ -728,9 +766,11 @@ function input(key) {
                     if (audioEnabled) {
                         audio("menu", true);
                     }
+                    saveGame();
                     break;
                 case 2:
                     reduceMotion = !reduceMotion;
+                    saveGame();
                     break;
                 case 3:
                     if (timeSinceLastThemeChange >= timeUntilChangableTheme) {
@@ -741,6 +781,7 @@ function input(key) {
                         }
                         dirtyRender = true;
                     }
+                    saveGame();
                     break;
                 case 4:
                     loadLevel(0);
@@ -777,6 +818,8 @@ function loadLevel(number, resetStack = true) {
 
     if (metadata.name) {
         levelName = (level) + ": "+ metadata.name;
+    } else if (!levelSolved.includes(true)) {
+        levelName = "WASD/Arrow Keys to move";
     } else {
         levelName = "";
     }
@@ -939,7 +982,6 @@ function EaseInOut(t) {
 //From https://stackoverflow.com/questions/13627111/drawing-text-with-an-outer-stroke-with-html5s-canvas
 function drawStroked(text, x, y) {
     ctx.miterLimit = 2;
-    ctx.font = '40px sans-serif';
     ctx.strokeStyle = colors[colorTheme][2];
     ctx.lineWidth = 8;
     ctx.strokeText(text, x, y);
@@ -1133,6 +1175,8 @@ function MovePlayer(horDelta, verDelta) {
             var lvl = hasLevelNode(player.x, player.y);
             if (lvl != null) {
                 levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
+            } else if (!levelSolved.includes(true)) {
+                levelName = "WASD/Arrow Keys to move";
             } else {
                 levelName = "";
             }
@@ -1153,6 +1197,7 @@ function MovePlayer(horDelta, verDelta) {
         if (hasWon) {
             console.warn("Victory!",steps + " (" + steps.length + ")");
             levelSolved[level] = true;
+            saveGame();
 
             audio("victory", true);
             victory = true;
@@ -1196,4 +1241,45 @@ function audio(soundID, alwaysPlay = false) {
                 break;
         }
     }
+}
+
+function saveGame() {
+    var ls = window.localStorage;
+
+    var levelsSaved = "";
+    for (var i = 0; i != levelSolved.length; i += 1) {
+        if (levelSolved[i] == true) {
+            levelsSaved += "t";
+        } else {
+            levelsSaved += "f";
+        }
+    }
+
+    ls.setItem("banbanban-levelsSolved",levelsSaved);
+    ls.setItem("banbanban-color",colorTheme);
+    ls.setItem("banbanban-audio", audioEnabled);
+    ls.setItem("banbanban-reduceMotion", reduceMotion);
+}
+
+function loadGame() {
+    var ls = window.localStorage;
+
+    var loadedValue = ls.getItem("banbanban-levelsSolved");
+    //console.log(loadedValue);
+    if (loadedValue != null) {
+        for (var i = 0; i != loadedValue.length; i += 1) {
+            levelSolved[i] = loadedValue[i] == "t";
+        }
+    }
+
+    var loadedValue = parseInt(ls.getItem("banbanban-color"));
+    if (loadedValue >= 0 && loadedValue < colors.length) {
+        colorTheme = loadedValue;
+    }
+
+    var loadedValue = ls.getItem("banbanban-audio");
+    audioEnabled = !loadedValue == "false";
+
+    var loadedValue = ls.getItem("banbanban-reduceMotion");
+    reduceMotion = loadedValue == "true";
 }
