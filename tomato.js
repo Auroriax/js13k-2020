@@ -1,21 +1,6 @@
 //TOMATO
 
 //TIMING
-/*class Time {
-	constructor(seconds) {
-		this.seconds = seconds;
-	}
-
-	get days() {return this.hours * 24}
-	set days(t) {this.seconds = t / 60 / 60 / 24 }
-	get hours() {return this.minutes *  60}
-	set hours(t) {this.seconds = t / 60 / 60 }
-	get minutes() {return (this.seconds * 60)}
-	set minutes(t) {this.seconds = t / 60 }
-	get milliSeconds() {return (this.seconds * 0.001);}
-	set milliSeconds(t) {this.seconds = t * 1000}
-}*/
-
 class Timing {
 	constructor(minimumFrameLength, maximumFrameLength) {
 		this.minimumFrameLength = minimumFrameLength;
@@ -51,7 +36,7 @@ class Timing {
 }
 
 //COLLISIONS
-class Vector2 {
+/*class Vector2 {
 	constructor(x,y) {
 		this.x = x;
 		this.y = y;
@@ -92,16 +77,16 @@ function HitboxSquare(xOffset, yOffset, size) {
 function PointInRectangle(point, hitbox) {
 	return (point.x > hitbox.origin.x && point.x < hitbox.origin.x + hitbox.width 
 		&& point.y > hitbox.origin.y && point.y < hitbox.origin.y + hitbox.height )
-}
+}*/
 
+//INPUT
 const pressedState = {
 	IDLE: 0,
 	PRESSED: 1,
 	HELD: 2,
 	RELEASED: 3
-}; //all lowercase if applicable!
+};
 
-//INPUT
 class InputHandler {
 	constructor(positiveKeys, negativeKeys = null, timer = null, timeForRefiring = 0, extraTimeForFirstRefire = 0) {
 		this.delta = 0;

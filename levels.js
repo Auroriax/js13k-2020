@@ -9,30 +9,6 @@ levels.push([
     ".333.3333.g",
     "##########.",
     "4.4.4.4g4#."
-    
-    
-    /*"#########",
-    "###...###",
-    "###.p.###",
-    "###.1.###",
-    "###...###",
-    "####g####",
-    "#...2...#",
-    "#.1.1.1.#",
-    "#.22.22.#",
-    "####g####",
-    "####.####",*/
-
-    /*"##########",
-    "plgl.#####",
-    ".#ll.g...#",
-    ".####.ll.#",
-    ".....#lllg",
-    "..lll.####",
-    "#.llll.#..",
-    "######gll.",
-    ".......ll.",
-    "##########",*/
 ]);
 levels.push([
     {nr: 100, name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
@@ -43,14 +19,6 @@ levels.push([
     ".b#t.p.",
     "..###.#",
 ]);
-/*levels.push([
-    {name: "Diabolical DNA"}, //Needs to be harder
-    "..#..",
-    "b.t##",
-    "p#.#.",
-    "##t.b",
-    "..#.."
-])*/
 levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
     {nr: 101, name: "Infinite Inlet"},
     "..#.",
@@ -120,17 +88,6 @@ levels.push([
     ".#.t.#",
     "..#.#."
 ]);
-/*levels.push([
-    {name: "Twisted Terrace"}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
-    "b..t..",
-    ".#tpt#",
-    "bb.t.b"
-]);*/
-/*levels.push([
-    {name: "Cracking Crowns v2", xOff: 3}, 
-    "pb.t.b",
-    "b#t.t#",
-]);*/
 levels.push([
     {nr: 300, name: "Sift & Shift"}, //Tutorial level for introducing the shifters
     "bt##|#",
@@ -212,18 +169,6 @@ levels.push([
     "rrrrrrr",
     "#######",
 ]);
-/*levels.push([
-    {name: "Questionable Quaternions", yOff: 2}, //Blueprint of what could be a good idea (that does take up a lotta space though)
-    ".....###",
-    ".#...#tr",
-    "rtr..#|r",
-    "r|r..#r.",
-    ".r...#|r",
-    ".....#tr",
-    ".#######",
-    ".#tt#...",
-    ".r||r...",
-]);*/
 levels.push([
     {nr: 402, name: "Swirling Stars"},
     "....#r+tr",
@@ -232,17 +177,6 @@ levels.push([
     "..t...p..",
     "#ttt#rrr#",
 ]);
-/*levels.push([
-    {name: "Blockway Breakout V1"}, //I really really like this idea, dDDurrrrddrruLdlUruLLLLLrrrrrddrdLdlUUUruLLLLrrrddddlluRdrUUUruLLLdllUdrruLdlllulllUUluRdrUUUruLLLululuuuU (106)
-    ".b.#.#.b",
-    "..#rpr#.",
-    "##rrtrr#",
-    "...txt..",
-    "##rrtrr#",
-    "..#r.r#.",
-    ".b.#.#.b",
-    "...#.#..",
-]);*/
 levels.push([
     {nr: 403, name: "Box Breakout"}, //I really really like this idea, drdLLLrruuuUddddllLrrruuuUddddlllLLLulDDDDDuuuurrrrUdllllddddDDrdLLrrluuuurRdRlullddddlLLrrruuuulldLdlUUUluullLLLLDlluRdrUluuruuU (129)
     "b.#.#.b",
@@ -261,81 +195,3 @@ levels.push([
     "###.#.#.###",
     "..#.###...#",
 ]);
-/*
-levels.push([
-    {name: "Stuck Shifter"}, //Idea is good but it is messy, needs player target to have potential
-    "bbrr.b",
-    "br.+rb",
-    "p.r.r.",
-    "bb.r.b"
-]);*/
-
-var level = 0;
-
-/*levels.push([
-    {name: "Stuck Shifter V2", yOff: -1}, //Idea behind this puzzle was to push an | horizontally across multiple screen wraps
-    "........",
-    "#t......",
-    "........",
-    "......|.",
-    "........",
-    "........",
-    "........",
-    "........",
-    "........",
-]);*/
-/*levels.push([
-    {name: "Fixing tweening bugs", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
-    "b......",
-    ".##.##",
-    ".#.t.#",
-    "bbtptb",
-    ".#.t.#",
-    "......"
-]);*/
-
-//VIABLE
-/*levels.push([
-    {name: "Uncornered", yOff: 1}, //dldddrrrrrllllluuurulll (23)
-    ".p....",
-    ".#.t..",
-    ".####.",
-    ".#....",
-    "...b..",
-    "######",
-])
-levels.push([
-    {name: "Box of Memories", yOff: 1}, //lrluuddurudrudrdrldrulululllldduulrddduuruluurdldulllldluuurul (62). Lots of busywork and very easy if you know the initial trick
-    "bbbbb",
-    "bttt.",
-    "btpt.",
-    "bttt.",
-])*/
-
-//DISCARDED
-/*
-levels[0] = [
-    {name: "Tumbling Tetronimos"}, //Hey, it's a normal Sokoban puzzle!
-    "####..#",
-    "#.....#",
-    "#..##.#",
-    "#..##.#",
-    "pb.##.#",
-    "#..##t#",
-    "#######"
-]
-
-levels[2] = [
-    {name: "Diabolical DNA", yOff: 2}, //Needs to be harder
-    ".t..",
-    "tbt.",
-    "bbbt"
-]
-
-levels[2] = [
-    {name: "Diabolical DNA", yOff: 1}, //Needs to be harder
-    "btb",
-    "tpt",
-    "btb"
-]
-*/

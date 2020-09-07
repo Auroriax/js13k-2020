@@ -94,8 +94,10 @@ var favicon = null;
 var wroteFavicon = false;
 onload = function(e) {
     favicon = document.querySelector('link[rel="icon"]');
-    console.log("Page fully loaded");
+    //console.log("Page fully loaded");
 }
+
+var level = 0;
 
 //Init level
 var gridHeight = levels[level].length;
@@ -241,7 +243,7 @@ function gameLoop() {
                             targetLevel = levelNodes[lvl].target;
                             victory = true;
                             timeSinceLevelWon = 0;
-                            audio("invalid");
+                            audio("select");
                         }
                     }
                 }
@@ -261,7 +263,7 @@ function gameLoop() {
                     switch(menuSelection) {
                         case 0: 
                             menuOpened = !menuOpened;
-                            audio("invalid", true);
+                            audio("select", true);
                             break;
                         case 1:
                             audioEnabled = !audioEnabled;
@@ -307,7 +309,7 @@ function gameLoop() {
         timeSinceMenuToggled = Math.min(timeSinceMenuToggled + timing.currentFrameLength, timeToToggleMenu);
 
         if (titleScreen) {
-            timeSinceLevelStart = Math.min(timeSinceLevelStart, timeToLoadLevel * .5);
+            timeSinceLevelStart = timeToLoadLevel * .5;
         }
 
         if (canvas.width < 700 || canvas.height < 700) {
@@ -424,7 +426,7 @@ function gameLoop() {
         if (favicon != null && !wroteFavicon) {
             favicon.href = targetCanvas.toDataURL('image/png');
             wroteFavicon = true;
-            console.log("Set favicon");
+            //console.log("Set favicon");
         }
 
         var shaking = (camShakeX != 0 || camShakeY != 0)
@@ -494,21 +496,7 @@ function gameLoop() {
             const borderOffset = 5;
             roughCanvas.rectangle(Math.round(cameraX-borderOffset + camShakeX * 0.5 * shakeMultiplier), Math.round(cameraY-borderOffset + camShakeY * 0.5 * shakeMultiplier), 
                 horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
-            ctx.globalAlpha = 1;        
-
-            //Path
-            /*if (path && path.length != 0) {
-                var drawPath = [[cameraX + levelMargin * 0.5 + (player.x+.5) * localScale, cameraY + levelMargin * 0.5 + (player.y+.5) * localScale]];
-                for(var i = 0; i != path.length; i += 1) {
-                    drawPath.push([cameraX + levelMargin * 0.5 + (path[i].x + 0.5 - gridHeight) * localScale, 
-                    cameraY + levelMargin * 0.5 + (path[i].y + 0.5 - gridWidth) * localScale]);
-                }
-                //console.log(drawPath)
-
-                roughCanvas.linearPath(drawPath, {stroke: colors[colorTheme][3], strokeWidth: 5, seed: roughSeed});
-                var last = drawPath[drawPath.length-1]
-                roughCanvas.circle(last[0], last[1], 25, {seed: roughSeed});
-            }*/
+            ctx.globalAlpha = 1;
 
             //Draw rectangle
             if (titleScreen || menuOpened) {
@@ -563,10 +551,6 @@ function gameLoop() {
                     //Menu
                     roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
                     ctx.fillText("[Esc]",50,60);
-
-                    //QQQ
-                    roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
-                    ctx.fillText("Todo: Polish, QA. Deadline 13 September!",canvas.width * 0.5 + 100,75);
  
                     if (level != 0) {
                         if (!freshState) {
@@ -643,19 +627,19 @@ function gameLoop() {
         window.requestAnimationFrame(gameLoop);
     }
     catch (e) {
-        console.error("Whoops! Something went wrong and the game crashed. The cause:", e);
-        console.log("Here's some extra info to help resolve the issue. (It might contain some personal information.)");
+        console.error("Whoops! The game crashed.", e);
+        console.log("Please report this information to the dev. (It might contain some personal information.)");
         console.log("Your user agent is:",navigator.userAgent);
         console.log("Are your cookies enabled?",navigator.cookieEnabled);
-        console.log("Are you online?",navigator.onLine);
-        console.log("The language your browser is set to:",navigator.language);
         
         const canvas = document.getElementById("canvas");
         if (canvas) {
             console.log("Size of the canvas:",{width: canvas.width, height: canvas.height})
+            ctx.font = "30px sans-serif";
+            ctx.fillStyle = "red";
+            ctx.textAlign = "left";
+            ctx.fillText("Whoops, the game crashed! See the console for more info.",50,50)
         }
-
-        clearInterval(gameLoop);
     }
 };
 
@@ -686,6 +670,31 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     }
 
     var off = 10;
+
+    var playerTween = tweenPlayer();
+
+    //Path
+    if (undoStack.length > 0) {
+        var amt = 12;
+        var cur = 0;
+        for(var i = Math.max(0, undoStack.length - amt); i != undoStack.length; i += 1) {
+            cur++;
+
+            levelCtx.globalAlpha = (cur / amt) * 0.5 + (1/amt) * (1-(timeSinceLastAction / timeToCompleteTween));
+
+            var p1 = undoStack[i].player;
+            var p2;
+            if (i == undoStack.length-1) {
+                p2 = playerTween;
+            } else {
+                p2 = undoStack[i+1].player;
+            } //QQQ Make sure line wraps around screen properly, and stays intact during shifts
+            roughLevel.line(PosX(p1.x + .5), PosY(p1.y + .5), PosX(p2.x + .5), PosY(p2.y + .5), {strokeWidth: localScale * 0.25, stroke: colors[colorTheme][3], seed: roughSeed});
+            //console.log(PosX(p1.x + .5))
+        }
+    }
+    //console.log(levelCtx.globalAlpha);
+    levelCtx.globalAlpha = 1;
 
     //Rubble
     for(let i = 0; i != rubble.length; i++) {
@@ -720,8 +729,6 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     }
 
     //Player
-    var playerTween = tweenPlayer();
-
     function drawPlayer(offsetX = 0, offsetY = 0) {
         levelCtx.drawImage(playerCanvas, PosX(playerTween.x) + offsetX + camShakeX, 
         PosY(playerTween.y) + offsetY + camShakeY);
@@ -850,6 +857,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 function input(event) {
     if (victory) {return;}
     if (titleScreen) {
+        audio("select", true);
         titleScreen = false;
         return;
     }
@@ -862,6 +870,8 @@ function input(event) {
         menuOpened = !menuOpened;
         if (menuOpened) {
             audio("menu", true);
+        } else {
+            audio("select", true);
         }
         timeSinceMenuToggled = 0;
         menuSelection = 0;
@@ -937,7 +947,7 @@ function loadLevel(number, resetStack = true) {
     var placedPlayer = false;
     var levelsPlaced = null;
     if (metadata.levelSpread) {
-        console.log(metadata.levelSpread);
+        //console.log(metadata.levelSpread);
         var levelsPlaced = metadata.levelSpread.slice();
     }
     var gatesPlaced = 0;
@@ -958,7 +968,7 @@ function loadLevel(number, resetStack = true) {
             switch (str) {
                 case obj.PLAYER:
                     if (!placedPlayer) {
-                        this.player = {x: x, y: y};
+                        player = {x: x, y: y};
                     }
                     break;
                 case obj.WALL:
@@ -1071,8 +1081,8 @@ function wrapCoords(newX, newY) {
     }
 
     var wrappedOnX = wrapX();
-    var wrappedOnY = wrapY();
-    if (!wrappedOnX) {
+    /*var wrappedOnY =*/ wrapY();
+    if (!wrappedOnX) { //QQQ Shouldn't this be the other way around?
         wrapX();
     }
     /*if (!wrappedOnY) {
@@ -1140,89 +1150,6 @@ function drawStroked(ctx, text, x, y) {
     ctx.fillText(text, x, y);
 }
 
-/*function pathFinding(targetX, targetY) {
-    //Make 3x3 grid
-    var grid = [];
-    for(var xx = 0; xx != 3; xx += 1) {
-        for(var x = 0; x != gridWidth; x += 1) {
-            grid.push([]);
-            for(var yy = 0; yy != 3; yy += 1) {
-                for(var y = 0; y != gridHeight; y += 1) {
-                    if (hasBox(x,y) !== null || hasWall(x,y) !== null) {
-                        grid[grid.length-1].push(0);
-                    } else {
-                        grid[grid.length-1].push(1);
-                    }
-                }
-            }
-        }
-    }
-
-    //Apply level offset
-    if (levelOffsetX != 0) {
-        console.log("Shifting X for the pathfinder");
-        var s = Math.sign(levelOffsetY)-1;
-        for(var i = 0; i != Math.abs(levelOffsetX); i += 1) {
-            for(var j = 0; j != grid.length; j += 1) {
-                var d = Math.floor(j / gridWidth) - 1; 
-                console.log("d",d)
-                if (d*s == 1) { //Remove from ending of array, move to back
-                    var item = grid[j].pop()
-                    grid[j].unshift(item);
-                } else if (d*s == -1) {
-                    var item = grid[j].shift(); //Remove from beginning of array, add at end
-                    grid[j].push(DataTransferItem)
-                }
-            }
-        }
-    } else if (levelOffsetY != 0) {
-        //QQQ
-    }
-
-    console.log(grid);
-
-    var graph = new Graph(grid);
-
-    var winningPath = [];
-    for(var x = -1; x != 2; x += 1) {
-        for(var y = -1; y != 2; y += 1) {
-            var px = player.x + (x+1) * gridHeight;
-            var py = player.y + (y+1) * gridWidth;
-
-            var tx = (targetX + gridHeight);
-            var ty = (targetY + gridWidth);
-
-            if (px == tx || py == ty) {
-                //Already on the targeted position!
-                path = [];
-                return;
-            }
-
-            if (px < 0 || py < 0 || tx < 0 || ty < 0) {
-                console.log("One of the coordinates falls below 0");
-                break;
-            } else if (px > gridWidth*3 || py > gridHeight*3 || tx > gridWidth*3 || ty > gridHeight*3) {
-                console.log("One of the coordinates falls beyond grid boundaries");
-                break;
-            }
- 
-            var start = graph.grid[(px)][(py)];
-            console.log("Start",start);
-            var end = graph.grid[tx][ty];
-            console.log("End",end);
-            var result = astar.search(graph, start, end);
-            console.log("Result",result);
-
-            if (result.length != 0 && (result.length < winningPath.length || winningPath.length == 0)) {
-                winningPath = result;
-            }
-        }
-    }
-
-    console.log("Winning Result",winningPath);
-    path = winningPath;
-}*/
-
 function MovePlayer(horDelta, verDelta) {
     var dir = "";
 
@@ -1232,7 +1159,7 @@ function MovePlayer(horDelta, verDelta) {
     else if (verDelta == -1) {dir = "u"}
     else {throw new Error("MovePlayer function did not recieve valid arguments.")}
 
-    console.log("------");
+    //console.log("------");
 
     if (horDelta != 0 || verDelta != 0) {
         undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
@@ -1247,10 +1174,10 @@ function MovePlayer(horDelta, verDelta) {
         var targetX = target.x;
         var targetY = target.y;
 
-        console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
+        //console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
 
         let foundBox = hasBox(targetX, targetY);
-        console.log("fb: "+foundBox);
+        //console.log("fb: "+foundBox);
         if (foundBox !== null) {
             var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
             let boxTargetX = boxTarget.x;
@@ -1315,8 +1242,6 @@ function MovePlayer(horDelta, verDelta) {
         }
         timeSinceLastAction = 0;
 
-        //pathFinding(1, 2);
-
         prevHorDelta = horDelta;
         prevVerDelta = verDelta;
 
@@ -1363,7 +1288,7 @@ function MovePlayer(horDelta, verDelta) {
         }
     } else {
         if (horDelta != 0 || verDelta != 0) {
-            audio("invalid");
+            audio("bump");
             undoStack.pop(); //Nothing changed, so discard Undo state.
         }
         camShakeX = horDelta * 12;
@@ -1377,9 +1302,11 @@ function audio(soundID, alwaysPlay = false) {
     if (timeSinceLastAudio >= timeUntilPlayableAudio || alwaysPlay) {
         if (!alwaysPlay) {timeSinceLastAudio = 0;}
         switch (soundID.toLowerCase()) {
-            case "invalid":
+            case "select":
                 zzfx(...[,.3,176,.02,,.08,3,.4,-0.7,-21,-127,.01,.05,,,,.38,,.03]);
                 break;
+            case "bump":
+                zzfx(...[,.3,220,.02,,.08,3,.4,-0.7,-21,-127,.01,.05,,,,.38,,.03]);
             case "walk":
                 zzfx(...[.6,.1,176,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
                 break;
