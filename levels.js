@@ -1,7 +1,29 @@
 var levels = [];
 levels.push([
-    {xOff: 0}, //Level select
-    "##########",
+    {gates: [1, 3, 6, 12, 15], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
+    "##########.",
+    "p1g.1.1.1.g",
+    "##########.",
+    "2.2.2.2.2.g",
+    "##########.",
+    ".333.3333.g",
+    "##########.",
+    "4.4.4.4g4#."
+    
+    
+    /*"#########",
+    "###...###",
+    "###.p.###",
+    "###.1.###",
+    "###...###",
+    "####g####",
+    "#...2...#",
+    "#.1.1.1.#",
+    "#.22.22.#",
+    "####g####",
+    "####.####",*/
+
+    /*"##########",
     "plgl.#####",
     ".#ll.g...#",
     ".####.ll.#",
@@ -10,7 +32,7 @@ levels.push([
     "#.llll.#..",
     "######gll.",
     ".......ll.",
-    "##########",
+    "##########",*/
 ]);
 levels.push([
     {nr: 100, name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
@@ -133,7 +155,7 @@ levels.push([
 ]);
 levels.push([
     {nr: 303, name: "Irregular Infrastructure", yOff: 2}, //urullulddddddldrurdldrrrrdrdddddddddddrdllllluldddddrdlllllulddddrdlll (70)
-    "##..|",
+    "##.|.",
     ".#..p",
     ".#..#",
     ".#.#t",
@@ -228,8 +250,16 @@ levels.push([
     "#rrtrr#",
     "...+...",
     "#rrtrr#",
-    "1#r.r#1",
-    "b1#.#.b",
+    "q#r.r#q", //The q's mark possible target locations
+    "bq#.#.b",
+]);
+levels.push([
+    {nr: 404, name: "Edge Not Found"},
+    "p-..........",
+    "#.#.###.#.#",
+    "#.#.#.#.#t#",
+    "###.#.#.###",
+    "..#.###...#",
 ]);
 /*
 levels.push([

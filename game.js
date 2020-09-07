@@ -40,7 +40,10 @@ let undoStack = [];
 var camShakeX = 0;
 var camShakeY = 0;
 
-var mousePos = new Vector2(0,0);
+//var mousePos = new Vector2(0,0);
+
+var gameName = "Ban";
+var subTitle = "Press any key";
 
 const obj = {
     EMPTY: ".",
@@ -51,11 +54,14 @@ const obj = {
     SHIFTBOXHOR: "-",
     SHIFTBOXVER: "|",
     TARGET: "t",
-    LEVELNODE: "l",
+    LEVELONE: "1",
+    LEVELTWO: "2",
+    LEVELTHREE: "3",
+    LEVELFOUR: "4",
     RUBBLE: "r",
     GATE: "g",
 
-    SHIFTBOXANDTARGET: "x"
+    //SHIFTBOXANDTARGET: "x"
 }; //all lowercase if applicable!
 
 var levelName = "";
@@ -74,11 +80,15 @@ onkeydown = e => {
     input(e.key);
 };
 
-canvas.addEventListener('mousemove', function(evt) {
+/*canvas.addEventListener('mousemove', function(evt) {
     var rect = canvas.getBoundingClientRect();
     mousePos = new Vector2(evt.clientX - rect.left, evt.clientY - rect.top);
     //console.log(mousePos);
-}, false);
+}, false);*/
+
+window.onbeforeunload = function(e) {
+    return "Quit?";
+ };
 
 //Init level
 var gridHeight = levels[level].length;
@@ -122,7 +132,7 @@ var titleScreen = true;
 
 var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.2);
 var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.2);
-var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.3);
+var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.2);
 
 //var path = null;
 
@@ -243,6 +253,11 @@ function gameLoop() {
             if (level == 0) {
                 loadLevel(targetLevel);
             } else {
+                if (level == levels.length-1) {
+                    gameName = "Victory! ";
+                    subTitle = "Thank you for playing!"
+                    titleScreen = true;
+                }
                 loadLevel(0);
             }
             alph = 0;
@@ -352,8 +367,11 @@ function gameLoop() {
         if (rerendered || titleScreen) {
             //console.log("Triggers only when entire canvas is redrawn");
 
-            var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5 + camShakeX * 0.25);
-            var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5+ camShakeY * 0.25);
+            var shakeMultiplier = 1;
+            if (reduceMotion) {shakeMultiplier = 0}
+
+            var cameraX = Math.round(canvas.width * 0.5 - horWidth * 0.5 - levelMargin * 0.5 + camShakeX * 0.25 * shakeMultiplier);
+            var cameraY = Math.round(canvas.height * 0.5 - verHeight * 0.5 - levelMargin * 0.5+ camShakeY * 0.25 * shakeMultiplier);
                 
             var clipOffset = 10; //In pixels, positive
             var screenWidthRatio = Math.ceil(((canvas.width - horWidth + clipOffset) / horWidth * 0.5));
@@ -385,9 +403,9 @@ function gameLoop() {
             }
 
             ctx.globalAlpha = alph;
-            ctx.drawImage(levelCanvas, cameraX + camShakeX, cameraY + camShakeY);
+            ctx.drawImage(levelCanvas, Math.round(cameraX + camShakeX * shakeMultiplier), Math.round(cameraY + camShakeY * shakeMultiplier));
             const borderOffset = 5;
-            roughCanvas.rectangle(Math.round(cameraX-borderOffset + camShakeX * 0.5), Math.round(cameraY-borderOffset + camShakeY * 0.5), 
+            roughCanvas.rectangle(Math.round(cameraX-borderOffset + camShakeX * 0.5 * shakeMultiplier), Math.round(cameraY-borderOffset + camShakeY * 0.5 * shakeMultiplier), 
                 horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
             ctx.globalAlpha = 1;        
 
@@ -433,20 +451,23 @@ function gameLoop() {
                 ctx.textBaseline = "center";
                 ctx.fillStyle = "black";
 
-                var txt = "Ban";
+                var txt = gameName;
 
                 var textWidth = ctx.measureText(txt).width;
                 var amount = Math.ceil(canvas.width / textWidth)+1;
 
                 txt = txt.repeat(amount);
 
-                var startX = (timing.timePlaying % 2) / 2;
+                var startX = 0
+                if (!reduceMotion) {
+                    var startX = (timing.timePlaying % 2) / 2;
+                }
 
                 drawStroked(ctx, txt,-startX * textWidth,canvas.height * .5);
 
                 ctx.font = Math.round(scale * 0.5) + "px sans-serif";
                 ctx.textAlign = "center";
-                drawStroked(ctx, "Press any key",canvas.width * .5,canvas.height * .6);
+                drawStroked(ctx, subTitle,canvas.width * .5,canvas.height * .6);
             }
             else if (!menuOpened) {
                 if (!victory) {
@@ -456,7 +477,7 @@ function gameLoop() {
 
                     //QQQ
                     roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
-                    ctx.fillText("[Todo: Progression, Polish, HTTP Codes, QA, 2 more puzzles. Deadline 13 September!]",canvas.width * 0.5 + 100,75);
+                    ctx.fillText("Todo: Show new levels, Polish, QA. Deadline 13 September!",canvas.width * 0.5 + 100,75);
  
                     if (level != 0) {
                         if (!freshState) {
@@ -831,6 +852,7 @@ function loadLevel(number, resetStack = true) {
     targets.length = 0;
     levelNodes.length = 0;
     rubble.length = 0;
+    gates.length = 0;
 
     camShakeX = 0;
     camShakeY = 0;
@@ -860,7 +882,21 @@ function loadLevel(number, resetStack = true) {
     }
 
     var placedPlayer = false;
+    var levelsPlaced = null;
+    if (metadata.levelSpread) {
+        console.log(metadata.levelSpread);
+        var levelsPlaced = metadata.levelSpread.slice();
+    }
     var gatesPlaced = 0;
+
+    function checkPlayer(x, y, lvl) {
+        if (lvl == targetLevel && !placedPlayer) {
+            this.player = {x: x, y: y};
+            placedPlayer = true;
+
+            levelName = levels[targetLevel][0].nr+": "+levels[targetLevel][0].name + " - [Space] to enter";
+        }
+    }
 
     for(let y = 0; y < gridHeight; y++) {
         for(let x = 0; x < gridWidth; x++) {
@@ -886,34 +922,42 @@ function loadLevel(number, resetStack = true) {
                 case obj.SHIFTBOX:
                     boxes.push({x: x, y: y, shift: 3});
                     break;
-                case obj.SHIFTBOXANDTARGET:
+                /*case obj.SHIFTBOXANDTARGET:
                     boxes.push({x: x, y: y, shift: 3});
                     targets.push({x: x, y: y});
-                    break;
+                    break;*/
                 case obj.TARGET:
                     targets.push({x: x, y: y});
                     break;
-                case obj.LEVELNODE:
-                    levelNodes.push({x: x, y: y, target: levelNodes.length+1});
-                    if (levelNodes.length == targetLevel && !placedPlayer) {
-                        this.player = {x: x, y: y};
-                        placedPlayer = true;
-
-                        levelName = (targetLevel)+": "+levels[targetLevel][0].name + " - [Space] to enter";
-                    }
+                case obj.LEVELONE:
+                    levelNodes.push({x: x, y: y, target: levelsPlaced[0]});
+                    console.log("Placing level "+levelsPlaced[0])
+                    checkPlayer(x, y, levelsPlaced[0]);
+                    levelsPlaced[0]++;
+                    break;
+                case obj.LEVELTWO:
+                    levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
+                    console.log("Placing level "+levelsPlaced[1])
+                    checkPlayer(x, y, levelsPlaced[1]);
+                    levelsPlaced[1]++;
+                    break;
+                case obj.LEVELTHREE:
+                    levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
+                    console.log("Placing level "+levelsPlaced[2])
+                    checkPlayer(x, y, levelsPlaced[2]);
+                    levelsPlaced[2]++;
+                    break;
+                case obj.LEVELFOUR:
+                    levelNodes.push({x: x, y: y, target: levelsPlaced[3]});
+                    console.log("Placing level "+levelsPlaced[3])
+                    checkPlayer(x, y, levelsPlaced[3]);
+                    levelsPlaced[3]++;
                     break;
                 case obj.RUBBLE:
                     rubble.push({x: x, y: y});
                     break;
                 case obj.GATE:
-                    var target = 1;
-                    switch(gatesPlaced) {
-                        case 1: target = 3; break;
-                        case 2: target = 6; break;
-                        case 3: target = 12; break;
-                        case 4: target = 15; break;
-                    }
-                    gates.push({x: x, y: y, target: target})
+                    gates.push({x: x, y: y, target: metadata.gates[gatesPlaced]})
                     gatesPlaced++;
             }
         }
@@ -1329,7 +1373,7 @@ function setLevelName(lvl, offset = 0) {
     if (level != 0 && !levelSolved.includes(true)) {
         levelName = "Push the box to the goal!";
     } else if (lvl != null && lvl + offset != 0) {
-        levelName = (lvl + offset)+": "+levels[lvl + offset][0].name;
+        levelName = levels[lvl + offset][0].nr+": "+levels[lvl + offset][0].name;
         if (level == 0) {
             levelName += " - [Space] to enter";
         }
