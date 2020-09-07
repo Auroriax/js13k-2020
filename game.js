@@ -77,7 +77,7 @@ onkeydown = function(e) {
         e.preventDefault();
     }
 
-    input(e.key);
+    input(e);
 };
 
 /*canvas.addEventListener('mousemove', function(evt) {
@@ -133,6 +133,12 @@ var timeSinceLastThemeChange = 0;
 var timeUntilPlayableAudio = 0.075;
 var timeSinceLastAudio = 0;
 
+var timeToDisplayLevelName = 0.2;
+var timeSinceLevelNameChanged = 0;
+
+var timeToToggleMenu = 0.25;
+var timeSinceMenuToggled = timeToToggleMenu;
+
 var menuOpened = false;
 var menuSelection = 0;
 var titleScreen = true;
@@ -140,6 +146,7 @@ var titleScreen = true;
 var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.2);
 var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.2);
 var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.2);
+var confirmInput = new InputHandler(["KeyX", "Space", "Enter"], [], timing, 0.1, 0.2);
 
 //var path = null;
 
@@ -186,6 +193,7 @@ function gameLoop() {
         horizontalInput.update();
         verticalInput.update();
         undoInput.update();
+        confirmInput.update();
         
         //console.log(horizontalInput.delta);
 
@@ -226,6 +234,65 @@ function gameLoop() {
 
                     dirtyRender = true;
                 }
+                if (confirmInput.fired) {
+                    if (timeSinceLevelStart >= timeToLoadLevel) {
+                        var lvl = hasLevelNode(player.x, player.y)
+                        if (lvl != null) {
+                            targetLevel = levelNodes[lvl].target;
+                            victory = true;
+                            timeSinceLevelWon = 0;
+                            audio("invalid");
+                        }
+                    }
+                }
+            } else {//Menu input
+                var items = 5;
+                if (level == 0) {
+                    items = 4;
+                }
+        
+                if (verticalInput.fired && verticalInput.delta == 1) {
+                    menuSelection += 1; if (menuSelection >= items) {menuSelection = 0;}
+                }
+                else if (verticalInput.fired && verticalInput.delta == -1) {
+                    menuSelection -= 1; if (menuSelection < 0) {menuSelection = items-1;}
+                }
+                else if (confirmInput.fired) {
+                    switch(menuSelection) {
+                        case 0: 
+                            menuOpened = !menuOpened;
+                            audio("invalid", true);
+                            break;
+                        case 1:
+                            audioEnabled = !audioEnabled;
+                            if (audioEnabled) {
+                                audio("menu", true);
+                            }
+                            saveGame();
+                            break;
+                        case 2:
+                            reduceMotion = !reduceMotion;
+                            audio("walk", true);
+                            saveGame();
+                            break;
+                        case 3:
+                            if (timeSinceLastThemeChange >= timeUntilChangableTheme) {
+                                timeSinceLastThemeChange = 0;
+                                colorTheme++;
+                                if (colorTheme >= colors.length) {
+                                    colorTheme = 0;
+                                }
+                                dirtyRender = true;
+                                audio("walk", true);
+                            }
+                            saveGame();
+                            break;
+                        case 4:
+                            loadLevel(0);
+                            audio("back", true);
+                            menuOpened = !menuOpened;
+                    }
+                }
             }
         }
 
@@ -236,6 +303,12 @@ function gameLoop() {
         timeSinceLevelWon = Math.min(timeSinceLevelWon + timing.currentFrameLength, timeUntilLevelEnd); //Don't forget about the level select level end!
         timeSinceLastThemeChange = Math.min(timeSinceLastThemeChange + timing.currentFrameLength, timeUntilChangableTheme);
         timeSinceLastAudio = Math.min(timeSinceLastAudio + timing.currentFrameLength, timeUntilPlayableAudio);
+        timeSinceLevelNameChanged = Math.min(timeSinceLevelNameChanged + timing.currentFrameLength, timeToDisplayLevelName);
+        timeSinceMenuToggled = Math.min(timeSinceMenuToggled + timing.currentFrameLength, timeToToggleMenu);
+
+        if (titleScreen) {
+            timeSinceLevelStart = Math.min(timeSinceLevelStart, timeToLoadLevel * .5);
+        }
 
         if (canvas.width < 700 || canvas.height < 700) {
             scale = 40;
@@ -264,6 +337,7 @@ function gameLoop() {
                     gameName = "Victory! ";
                     subTitle = "Thank you for playing!"
                     titleScreen = true;
+                    audio("gameend");
                 }
                 loadLevel(0);
             }
@@ -439,8 +513,8 @@ function gameLoop() {
             //Draw rectangle
             if (titleScreen || menuOpened) {
                 //Menu bg
-                ctx.globalAlpha = 0.2;
-                ctx.fillStyle = colors[colorTheme][2];
+                ctx.globalAlpha = 0.4;
+                ctx.fillStyle = colors[colorTheme][1];
                 ctx.fillRect(-1,-1,canvas.width + 2, canvas.height + 2);
                 ctx.globalAlpha = 1;
             }
@@ -449,7 +523,9 @@ function gameLoop() {
             if (!titleScreen) {
                 ctx.textAlign = "left";
                 ctx.font = "40px sans-serif";
+                ctx.globalAlpha = EaseInOut(timeSinceLevelNameChanged / timeToDisplayLevelName)
                 drawStroked(ctx, levelName, 40, canvas.height - 40);
+                ctx.globalAlpha = 1;
             }
 
             ctx.font = "22px sans-serif";
@@ -457,7 +533,7 @@ function gameLoop() {
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
 
-            //Draw title screen QQQ
+            //Draw title screen
             if (titleScreen) {
                 ctx.font = Math.round(scale * 1.2) + "px sans-serif";
                 ctx.textAlign = "left";
@@ -515,15 +591,20 @@ function gameLoop() {
                     }
                 } else {
                 ctx.globalAlpha = 1;
-                var width = 400;
-                roughCanvas.rectangle(-5, -5, width + 5, 305, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
-            
-                ctx.fillStyle = colors[colorTheme][1];
-                ctx.textAlign = "center";
+                var growth = 1;
+                if (!reduceMotion) {
+                    var growth = EaseInOut(timeSinceMenuToggled / timeToToggleMenu);
+                }
+                var width = 400 * growth;
+                roughCanvas.rectangle(-5, -5, width + 5, 55 + 250 * growth, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
 
                 var textBase = 50;
-                var textOffset = 50;
+                var textOffset = 50 * growth;
+                ctx.globalAlpha = growth;
                 roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fillStyle: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+
+                ctx.fillStyle = colors[colorTheme][1];
+                ctx.textAlign = "center";
 
                 var txt = "Audio: ";
                 if (audioEnabled == true) {
@@ -553,6 +634,8 @@ function gameLoop() {
                     ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
                     ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
                 }
+
+                ctx.globalAlpha = 1;
             }
         }
     
@@ -764,20 +847,23 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     }
 }
 
-function input(key) {
+function input(event) {
     if (victory) {return;}
     if (titleScreen) {
         titleScreen = false;
         return;
     }
 
+    var key = event.key;
+
     dirtyRender = true;
 
-    if (key == "Escape") {
+    if (key == "Escape" && timeSinceMenuToggled >= 0.1) {
         menuOpened = !menuOpened;
         if (menuOpened) {
             audio("menu", true);
         }
+        timeSinceMenuToggled = 0;
         menuSelection = 0;
     }
 
@@ -789,66 +875,12 @@ function input(key) {
                 loadLevel(level, false);
             }
             return;
-        } else if (key == "+") {
+        } else if (event.shiftKey && key == "n" || key == "N") {
             loadLevel(Math.min(level + 1, levels.length-1 )); //QQQ
             return;
-        } else if (key == "-") {
+        } else if (event.shiftKey && key == "b" || key == "B") {
             loadLevel(Math.max(level - 1, 0 )); //QQQ
             return;
-        } else if (key == " " || key == "x" || key == "X" || key == "Enter") {
-            if (timeSinceLevelStart >= timeToLoadLevel) {
-                var lvl = hasLevelNode(player.x, player.y)
-                if (lvl != null) {
-                    targetLevel = levelNodes[lvl].target;
-                    victory = true;
-                    timeSinceLevelWon = 0;
-                    audio("invalid");
-                }
-            }
-        }
-    } else { //Menu input
-        var items = 5;
-        if (level == 0) {
-            items = 4;
-        }
-
-        if (key == "ArrowDown" || key == "s" || key == "S") {
-            menuSelection += 1; if (menuSelection >= items) {menuSelection = 0;}
-        }
-        else if (key == "ArrowUp" || key == "w" || key == "W") {
-            menuSelection -= 1; if (menuSelection < 0) {menuSelection = items-1;}
-        }
-        else if (key == " " || key == "x" || key == "X" || key == "Enter") {
-            switch(menuSelection) {
-                case 0: 
-                    menuOpened = !menuOpened;
-                    break;
-                case 1:
-                    audioEnabled = !audioEnabled;
-                    if (audioEnabled) {
-                        audio("menu", true);
-                    }
-                    saveGame();
-                    break;
-                case 2:
-                    reduceMotion = !reduceMotion;
-                    saveGame();
-                    break;
-                case 3:
-                    if (timeSinceLastThemeChange >= timeUntilChangableTheme) {
-                        timeSinceLastThemeChange = 0;
-                        colorTheme++;
-                        if (colorTheme >= colors.length) {
-                            colorTheme = 0;
-                        }
-                        dirtyRender = true;
-                    }
-                    saveGame();
-                    break;
-                case 4:
-                    loadLevel(0);
-                    menuOpened = !menuOpened;
-            }
         }
     }
 }
@@ -916,6 +948,7 @@ function loadLevel(number, resetStack = true) {
             placedPlayer = true;
 
             levelName = levels[targetLevel][0].nr+": "+levels[targetLevel][0].name + " - [Space] to enter";
+            timeSinceLevelNameChanged = 0;
         }
     }
 
@@ -1081,7 +1114,7 @@ function hasRubble(x, y) {
 function hasClosedGate(x, y) {
     var gate = hasThing(gates, x, y)
     if (gates[gate] != null) {
-        console.log(gates[gate].target, amountOfLevelsSolved)
+        //console.log(gates[gate].target, amountOfLevelsSolved)
         if (gates[gate].target <= amountOfLevelsSolved) {
             return null;
         }
@@ -1318,7 +1351,15 @@ function MovePlayer(horDelta, verDelta) {
             victory = true;
             timeSinceLevelWon = 0;
         } else {
-            audio("walk");
+            if (boxPushed) {
+                if (prevLevelOffsetX != 0 || prevLevelOffsetY != 0) {
+                    audio("shift");
+                } else {
+                    audio("push");
+                }
+            } else {
+                audio("walk");
+            }
         }
     } else {
         if (horDelta != 0 || verDelta != 0) {
@@ -1342,8 +1383,14 @@ function audio(soundID, alwaysPlay = false) {
             case "walk":
                 zzfx(...[.6,.1,176,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
                 break;
+            case "push":
+                zzfx(...[.5,.1,220,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
+                break;
+            case "shift":
+                zzfx(...[.45,.1,250,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,.1,.1,,.02]);
+                break;
             case "victory":
-                zzfx(...[,,934,.12,.38,.93,1,.27,,.4,-434,.08,.2,.1,,.1,.17,.55,1,.46]);
+                zzfx(...[.6,,934,.12,.38,.93,1,.27,,.4,-434,.08,.2,.1,,.1,.17,.55,1,.46]);
                 break;
             case "undo": 
                 zzfx(...[,,110,,,,1,1.82,,.1,,,,.1,,.1,.01,.7,.02,.15]);
@@ -1354,6 +1401,11 @@ function audio(soundID, alwaysPlay = false) {
             case "menu":
                 zzfx(...[,.02,1638,,.05,.17,1,,,,490,.09,,,,.1,.05,.5,.03]);
                 break;
+            case "back":
+                zzfx(...[,,98,.08,.18,.02,2,2.47,36,.5,,,.04,.1,,.9,.44,,.04]);
+                break;
+            case "gameend":
+                zzfx(...[,,525,.18,.28,.17,1,1.24,8.3,-9.7,-151,.03,.06,,,,,.93,.02,.14]);
         }
     }
 }
@@ -1376,6 +1428,7 @@ function saveGame() {
     ls.setItem("banbanban-color",colorTheme);
     ls.setItem("banbanban-audio", audioEnabled);
     ls.setItem("banbanban-reduceMotion", reduceMotion);
+    ls.setItem("banbanban-version", 1);
 }
 
 function loadGame() {
@@ -1409,6 +1462,7 @@ function loadGame() {
 }
 
 function setLevelName(lvl, offset = 0) {
+    var prevName = levelName;
     if (level != 0 && !levelSolved.includes(2)) {
         levelName = "Push the box to the goal!";
     } else if (lvl != null && lvl + offset != 0) {
@@ -1420,5 +1474,8 @@ function setLevelName(lvl, offset = 0) {
         levelName = "WASD/Arrow Keys to move";
     } else {
         levelName = "";
+    }
+    if (prevName != levelName) {
+        timeSinceLevelNameChanged = 0;
     }
 }
