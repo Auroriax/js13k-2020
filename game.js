@@ -71,7 +71,7 @@ var levelOffsetY = 0; //QQQ Can't both be non-zero, might implement this later
 var prevLevelOffsetX = 0; //Between -1 and 1
 var prevLevelOffsetY = 0;
 
-onkeydown = e => {
+onkeydown = function(e) {
     if (e.key == "ArrowDown" || e.key == "ArrowUp" || e.key == " " || e.key == "Backspace")
     {
         e.preventDefault();
@@ -88,7 +88,14 @@ onkeydown = e => {
 
 window.onbeforeunload = function(e) {
     return "Quit?";
- };
+};
+
+var favicon = null;
+var wroteFavicon = false;
+onload = function(e) {
+    favicon = document.querySelector('link[rel="icon"]');
+    console.log("Page fully loaded");
+}
 
 //Init level
 var gridHeight = levels[level].length;
@@ -150,7 +157,7 @@ var freshState = true; //If the level was either just loaded or just reset
 var victory = false; //If the level is finished, no input is accepted until the next level loads
 var targetLevel = 0;
 
-var dirtyRender = false; //Change when theme was changed.
+var dirtyRender = true; //Change when theme was changed.
 var previousScale = 0;
 
 window.onresize = function() {
@@ -164,7 +171,7 @@ canvas.height = canvas.clientHeight;
 
 var levelSolved = [];
 for(var i = 0; i != levels.length; i += 1) {
-    levelSolved[i] = false; //QQQ
+    levelSolved[i] = 0; //0 = new, 1 = tried, 2 = solved.
 }
 var amountOfLevelsSolved = 0;
 
@@ -223,12 +230,12 @@ function gameLoop() {
         }
 
         //Rendering
-        timeSinceLastAction += timing.currentFrameLength;
-        timeSinceUpdatedRenders += timing.currentFrameLength;
-        timeSinceLevelStart += timing.currentFrameLength;
-        timeSinceLevelWon += timing.currentFrameLength;
-        timeSinceLastThemeChange += timing.currentFrameLength;
-        timeSinceLastAudio += timing.currentFrameLength;
+        timeSinceLastAction = Math.min(timeSinceLastAction + timing.currentFrameLength, timeToCompleteTween);
+        timeSinceUpdatedRenders = Math.min(timeSinceUpdatedRenders + timing.currentFrameLength, timeToUpdateRenders);
+        timeSinceLevelStart = Math.min(timeSinceLevelStart + timing.currentFrameLength, timeToLoadLevel);
+        timeSinceLevelWon = Math.min(timeSinceLevelWon + timing.currentFrameLength, timeUntilLevelEnd); //Don't forget about the level select level end!
+        timeSinceLastThemeChange = Math.min(timeSinceLastThemeChange + timing.currentFrameLength, timeUntilChangableTheme);
+        timeSinceLastAudio = Math.min(timeSinceLastAudio + timing.currentFrameLength, timeUntilPlayableAudio);
 
         if (canvas.width < 700 || canvas.height < 700) {
             scale = 40;
@@ -338,6 +345,12 @@ function gameLoop() {
             var size = 1.1;
             roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
                 localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+        }
+
+        if (favicon != null && !wroteFavicon) {
+            favicon.href = targetCanvas.toDataURL('image/png');
+            wroteFavicon = true;
+            console.log("Set favicon");
         }
 
         var shaking = (camShakeX != 0 || camShakeY != 0)
@@ -931,25 +944,25 @@ function loadLevel(number, resetStack = true) {
                     break;
                 case obj.LEVELONE:
                     levelNodes.push({x: x, y: y, target: levelsPlaced[0]});
-                    console.log("Placing level "+levelsPlaced[0])
+                    //console.log("Placing level "+levelsPlaced[0])
                     checkPlayer(x, y, levelsPlaced[0]);
                     levelsPlaced[0]++;
                     break;
                 case obj.LEVELTWO:
                     levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
-                    console.log("Placing level "+levelsPlaced[1])
+                    //console.log("Placing level "+levelsPlaced[1])
                     checkPlayer(x, y, levelsPlaced[1]);
                     levelsPlaced[1]++;
                     break;
                 case obj.LEVELTHREE:
                     levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
-                    console.log("Placing level "+levelsPlaced[2])
+                    //console.log("Placing level "+levelsPlaced[2])
                     checkPlayer(x, y, levelsPlaced[2]);
                     levelsPlaced[2]++;
                     break;
                 case obj.LEVELFOUR:
                     levelNodes.push({x: x, y: y, target: levelsPlaced[3]});
-                    console.log("Placing level "+levelsPlaced[3])
+                    //console.log("Placing level "+levelsPlaced[3])
                     checkPlayer(x, y, levelsPlaced[3]);
                     levelsPlaced[3]++;
                     break;
