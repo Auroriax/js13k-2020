@@ -490,7 +490,7 @@ function gameLoop() {
 
                     //QQQ
                     roughCanvas.rectangle(250,50,canvas.width - 300, 50, {fill: colors[colorTheme][2], fillWeight: 4, seed: 1});
-                    ctx.fillText("Todo: Show new levels, Polish, QA. Deadline 13 September!",canvas.width * 0.5 + 100,75);
+                    ctx.fillText("Todo: Polish, QA. Deadline 13 September!",canvas.width * 0.5 + 100,75);
  
                     if (level != 0) {
                         if (!freshState) {
@@ -677,9 +677,12 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
         levelCtx.font = Math.round(0.5 * localScale)+"px sans-serif";
         levelCtx.fillText(levels[levelNodes[i].target][0].nr.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
         
-        if (levelSolved[i+1]) {
+        if (levelSolved[i+1] == 2) {
             levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
-            levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
+            levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75);
+        } else if (levelSolved[i+1] == 0) {
+            levelCtx.font = "bold " + Math.round(0.25 * localScale)+"px sans-serif";
+            levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.8)
         }
     }
 
@@ -858,6 +861,11 @@ function loadLevel(number, resetStack = true) {
 
     gridHeight = levelToLoad.length;
     gridWidth = levelToLoad[0].length;
+
+    if (levelSolved[level] == 0) {
+        levelSolved[level] = 1;
+        saveGame();
+    }
     
     player = {x: 0, y: 0};
     walls.length = 0;
@@ -878,9 +886,9 @@ function loadLevel(number, resetStack = true) {
 
     setLevelName(level)
 
-    /*if (levelSolved[level]) {
+    if (levelSolved[level] == 2 && level != 0) {
         levelName += " ✓";
-    }*/
+    }
 
     if (metadata.xOff) {
         levelOffsetX = metadata.xOff;
@@ -949,18 +957,30 @@ function loadLevel(number, resetStack = true) {
                     levelsPlaced[0]++;
                     break;
                 case obj.LEVELTWO:
+                    if (amountOfLevelsSolved < metadata.gates[1]) {
+                        targets.push({x: x, y: y});
+                        break;
+                    }
                     levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
                     //console.log("Placing level "+levelsPlaced[1])
                     checkPlayer(x, y, levelsPlaced[1]);
                     levelsPlaced[1]++;
                     break;
                 case obj.LEVELTHREE:
+                    if (amountOfLevelsSolved < metadata.gates[2]) {
+                        targets.push({x: x, y: y});
+                        break;
+                    }
                     levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
                     //console.log("Placing level "+levelsPlaced[2])
                     checkPlayer(x, y, levelsPlaced[2]);
                     levelsPlaced[2]++;
                     break;
                 case obj.LEVELFOUR:
+                    if (amountOfLevelsSolved < metadata.gates[3]) {
+                        targets.push({x: x, y: y});
+                        break;
+                    }
                     levelNodes.push({x: x, y: y, target: levelsPlaced[3]});
                     //console.log("Placing level "+levelsPlaced[3])
                     checkPlayer(x, y, levelsPlaced[3]);
@@ -1288,8 +1308,8 @@ function MovePlayer(horDelta, verDelta) {
 
         if (hasWon) {
             console.warn("Victory!",steps + " (" + steps.length + ")");
-            if (levelSolved[level] == false) {
-                levelSolved[level] = true;
+            if (levelSolved[level] != 2) {
+                levelSolved[level] = 2;
                 amountOfLevelsSolved++;
             }
             saveGame();
@@ -1342,11 +1362,13 @@ function saveGame() {
     var ls = window.localStorage;
 
     var levelsSaved = "";
-    for (var i = 0; i != levelSolved.length; i += 1) {
-        if (levelSolved[i] == true) {
+    for (var i = 1; i != levelSolved.length; i += 1) {
+        if (levelSolved[i] == 2) {
             levelsSaved += "t";
-        } else {
+        } else if (levelSolved[i] == 1) {
             levelsSaved += "f";
+        } else {
+            levelsSaved += "n";
         }
     }
 
@@ -1362,10 +1384,12 @@ function loadGame() {
     var loadedValue = ls.getItem("banbanban-levelsSolved");
     //console.log(loadedValue);
     if (loadedValue != null) {
-        for (var i = 0; i != loadedValue.length; i += 1) {
-            if (loadedValue[i] == "t") {
-                levelSolved[i] = true;
+        for (var i = 1; i != levelSolved.length; i += 1) {
+            if (loadedValue[i-1] == "t") {
+                levelSolved[i] = 2;
                 amountOfLevelsSolved++;
+            } else if (loadedValue[i-1] == "f") {
+                levelSolved[i] = 1;
             }
         }
     }
@@ -1376,21 +1400,23 @@ function loadGame() {
     }
 
     var loadedValue = ls.getItem("banbanban-audio");
-    audioEnabled = !loadedValue == "false";
+    if (loadedValue == "false") {
+        audioEnabled = false;
+    }
 
     var loadedValue = ls.getItem("banbanban-reduceMotion");
     reduceMotion = loadedValue == "true";
 }
 
 function setLevelName(lvl, offset = 0) {
-    if (level != 0 && !levelSolved.includes(true)) {
+    if (level != 0 && !levelSolved.includes(2)) {
         levelName = "Push the box to the goal!";
     } else if (lvl != null && lvl + offset != 0) {
         levelName = levels[lvl + offset][0].nr+": "+levels[lvl + offset][0].name;
         if (level == 0) {
             levelName += " - [Space] to enter";
         }
-    } else if (!levelSolved.includes(true)) {
+    } else if (!levelSolved.includes(2)) {
         levelName = "WASD/Arrow Keys to move";
     } else {
         levelName = "";
