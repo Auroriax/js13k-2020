@@ -1,33 +1,25 @@
 var levels = [];
 levels.push([
     {xOff: 0}, //Level select
-    "###...###",
-    "pll......",
-    ".ll......",
-    ".....ll..",
-    ".....ll..",
-    ".lll.....",
-    ".lll.....",
-    "......ll.",
-    "......ll.",
-    "###...###",
+    "##########",
+    "plgl.#####",
+    ".#ll.g...#",
+    ".####.ll.#",
+    ".....#lllg",
+    "..lll.####",
+    "#.llll.#..",
+    "######gll.",
+    ".......ll.",
+    "##########",
 ]);
 levels.push([
-    {name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
+    {nr: 100, name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
     "#####.#",
     "......#",
     "...#..#",
     "#.###.#",
     ".b#t.p.",
     "..###.#",
-]);
-levels.push([
-    {name: "Glass Hallway"}, //Too easy to be interesting
-    "##b##",
-    "#.t.#",
-    "b.b..",
-    "#tpt#",
-    "##.##"
 ]);
 /*levels.push([
     {name: "Diabolical DNA"}, //Needs to be harder
@@ -38,7 +30,7 @@ levels.push([
     "..#.."
 ])*/
 levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
-    {name: "Infinite Inlet"},
+    {nr: 101, name: "Infinite Inlet"},
     "..#.",
     "p.#.",
     ".tbt",
@@ -46,7 +38,15 @@ levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
     ".tbt",
 ]);
 levels.push([
-    {name: "Girded Grid"}, //uurruullllddrrudrruullddlluuuuudrrddrruuudrrddlruurrddl ( ~50)
+    {nr: 102, name: "Glass Hallway"}, //Too easy to be interesting
+    "##.##",
+    ".t.tp",
+    "bb#bb",
+    ".t.t.",
+    "##.##"
+]);
+levels.push([
+    {nr: 103, name: "Girded Grid"}, //uurruullllddrrudrruullddlluuuuudrrddrruuudrrddlruurrddl ( ~50)
     ".#.#.#",
     "t.b.t.",
     ".#.#.#",
@@ -55,31 +55,48 @@ levels.push([
     "t.b.t."
 ]);
 levels.push([
-    {name: "Wrap Around The Block", yOff: 2}, //Wrap offset introduction puzzle
+    {nr: 200, name: "Wrap Around The Block", yOff: 2}, //Wrap offset introduction puzzle
     "....",
     "####",
-    "...b",
+    "....",
     "####",
-    ".t#p",
+    "..b.",
+    "####",
+    "t#.p",
     "####"
 ]);
 levels.push([
-    {name: "Twisted Terrace", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    {nr: 201, name: "Crowned Conundrum", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
+    "pb...b",
+    "b#.#.#",
+    ".#ttt#",
+]);
+levels.push([
+    {nr: 202, name: "Twisted Terrace", xOff: 3}, //llLddDRlLruuudddDDDDurRlluuuuuUU (32)
     "b..p..",
     ".##.##",
     ".#.t.#",
-    "bbt.tb",
+    "bbt#tb",
     ".#.t.#",
     ".##.##"
 ]);
 levels.push([
-    {name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
-    "#######",
-    "t....p.",
-    "t..b.b.",
-    ".######",
-    "t#.b.b.",
-    "t.....#"
+    {nr: 203, name: "Continuous Corridor", yOff: 3}, //ldurrdrrrrrurrrrrrrrrdrullldrrulllllldduurrrrdlllullldlllurrrr (62)
+    "######",
+    "tb..p.",
+    "t....b",
+    "######",
+    "t#...b",
+    "tb...#"
+]);
+levels.push([
+    {nr: 204, name: "Grandiose Garden", yOff: 3}, //???
+    "..bpb.",
+    "..#.#.",
+    ".#.t.#",
+    ".bt.tb",
+    ".#.t.#",
+    "..#.#."
 ]);
 /*levels.push([
     {name: "Twisted Terrace"}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
@@ -87,25 +104,19 @@ levels.push([
     ".#tpt#",
     "bb.t.b"
 ]);*/
-levels.push([
-    {name: "Crowned Conundrum", xOff: 3}, //uuulllllrrddduuuuuuddddddlrrluuurrruuuuuullrrddddddllrrdulllu (61)
-    "pb...b",
-    "b#.#.#",
-    ".#ttt#",
-]);
 /*levels.push([
     {name: "Cracking Crowns v2", xOff: 3}, 
     "pb.t.b",
     "b#t.t#",
 ]);*/
 levels.push([
-    {name: "Sift & Shift"}, //Tutorial level for introducing the shifters
+    {nr: 300, name: "Sift & Shift"}, //Tutorial level for introducing the shifters
     "bt##|#",
     "###p..",
     "####.#"
 ]);
 levels.push([
-    {name: "Cornered Contraption", yOff: 1}, //drrrrrrrlllllurdruulurrrrdrruulrddllurdrulurrrrrurdldrr (55)
+    {nr: 301, name: "Cornered Contraption", yOff: 1}, //drrrrrrrlllllurdruulurrrrdrruulrddllurdrulurrrrrurdldrr (55)
     "p....",
     ".|...",
     "#####",
@@ -113,7 +124,15 @@ levels.push([
     "###.."
 ]);
 levels.push([
-    {name: "Irregular Infrastructure", yOff: 2}, //urullulddddddldrurdldrrrrdrdddddddddddrdllllluldddddrdlllllulddddrdlll (70)
+    {nr: 302, name: "Zealous Zigzag"}, //???
+    "#t#t#t",
+    ".-..-.",
+    "###..#",
+    ".p####",
+    ".-....",
+]);
+levels.push([
+    {nr: 303, name: "Irregular Infrastructure", yOff: 2}, //urullulddddddldrurdldrrrrdrdddddddddddrdllllluldddddrdlllllulddddrdlll (70)
     "##..|",
     ".#..p",
     ".#..#",
@@ -122,7 +141,15 @@ levels.push([
     "....."
 ]);
 levels.push([
-    {name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+    {nr: 304, name: "Enchanted Encagement"}, //ldRuluRdrUUUUUluRRluuuulluuuUruLLrUUUddllldRRllduurrrrlDDDDDuuuullldRRurDDDD (76)
+    "##.#.###.#.#",
+    "#..-..#....#",
+    "#..p..#.t.t.",
+    "#..-..##....",
+    "##.#.###.#.#",
+]);
+levels.push([
+    {nr: 305, name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
     "...",
     ".t.",
     "#|#",
@@ -132,15 +159,7 @@ levels.push([
     "#|#",
 ]);
 levels.push([
-    {name: "Enchanted Maze"}, //ldRuluRdrUUUUUluRRluuuulluuuUruLLrUUUddllldRRllduurrrrlDDDDDuuuullldRRurDDDD (76)
-    "##.#.###.#.#",
-    "#..-..#....#",
-    "#..p..#.t.t.",
-    "#..-..##....",
-    "##.#.###.#.#",
-]);
-levels.push([
-    {name: "Numbered Lock", yOff: -2}, //lrrlluurrDLLLLLLLdlUUrrdddrrrrrddrruLdlUUlluulllluuulluurDDldRRddrrrrruurDDllllLulDuullllllllllullldRRRRRRRRRRRurDrddrddlUluluurlddrRuulDrdRRRlllulldRRRR (153)
+    {nr: 306, name: "Locked Loungerooms", yOff: -2}, //lrrlluurrDLLLLLLLdlUUrrdddrrrrrddrruLdlUUlluulllluuulluurDDldRRddrrrrruurDDllllLulDuullllllllllullldRRRRRRRRRRRurDrddrddlUluluurlddrRuulDrdRRRlllulldRRRR (153)
     "#########",
     "####..###",
     ".......##",
@@ -153,13 +172,13 @@ levels.push([
     "tt#...###",
 ]);
 levels.push([
-    {name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+    {nr: 400, name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
     "###..r#",
     "tpb..r#",
     "#######"
 ]);
 levels.push([
-    {name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
+    {nr: 401, name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
     "rrrrrrr",
     "#t|#|t#",
     "#|t#t|#",
@@ -184,7 +203,7 @@ levels.push([
     ".r||r...",
 ]);*/
 levels.push([
-    {name: "Swirling Stars"},
+    {nr: 402, name: "Swirling Stars"},
     "....#r+tr",
     "b##..r.rb",
     "b.##..r.b",
@@ -203,7 +222,7 @@ levels.push([
     "...#.#..",
 ]);*/
 levels.push([
-    {name: "Box Breakout"}, //I really really like this idea, drdLLLrruuuUddddllLrrruuuUddddlllLLLulDDDDDuuuurrrrUdllllddddDDrdLLrrluuuurRdRlullddddlLLrrruuuulldLdlUUUluullLLLLDlluRdrUluuruuU (129)
+    {nr: 403, name: "Box Breakout"}, //I really really like this idea, drdLLLrruuuUddddllLrrruuuUddddlllLLLulDDDDDuuuurrrrUdllllddddDDrdLLrrluuuurRdRlullddddlLLrrruuuulldLdlUUUluullLLLLDlluRdrUluuruuU (129)
     "b.#.#.b",
     ".#rpr#.",
     "#rrtrr#",

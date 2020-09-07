@@ -53,6 +53,7 @@ const obj = {
     TARGET: "t",
     LEVELNODE: "l",
     RUBBLE: "r",
+    GATE: "g",
 
     SHIFTBOXANDTARGET: "x"
 }; //all lowercase if applicable!
@@ -89,6 +90,7 @@ var walls = [];
 var boxes = [];
 var targets = [];
 var levelNodes = [];
+var gates = [];
 var rubble = [];
 
 var steps = "";
@@ -118,8 +120,8 @@ var menuOpened = false;
 var menuSelection = 0;
 var titleScreen = true;
 
-var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.3);
-var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.3);
+var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.2);
+var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLeft"], timing, 0.1, 0.2);
 var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.3);
 
 //var path = null;
@@ -154,6 +156,7 @@ var levelSolved = [];
 for(var i = 0; i != levels.length; i += 1) {
     levelSolved[i] = false; //QQQ
 }
+var amountOfLevelsSolved = 0;
 
 loadGame();
 
@@ -166,6 +169,8 @@ function gameLoop() {
         horizontalInput.update();
         verticalInput.update();
         undoInput.update();
+        
+        //console.log(horizontalInput.delta);
 
         //Input
         if (!victory && !titleScreen) {
@@ -195,13 +200,7 @@ function gameLoop() {
 
                     if (level == 0) {
                         var lvl = hasLevelNode(player.x, player.y);
-                        if (lvl != null) {
-                            levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
-                        } else if (!levelSolved.includes(true)) {
-                            levelName = "WASD/Arrow Keys to move";
-                        } else {
-                            levelName = "";
-                        }
+                        setLevelName(lvl,1)
                     }
 
                     timeSinceLastAction = timeToCompleteTween;
@@ -419,7 +418,7 @@ function gameLoop() {
             if (!titleScreen) {
                 ctx.textAlign = "left";
                 ctx.font = "40px sans-serif";
-                drawStroked(levelName, 40, canvas.height - 40);
+                drawStroked(ctx, levelName, 40, canvas.height - 40);
             }
 
             ctx.font = "22px sans-serif";
@@ -443,11 +442,11 @@ function gameLoop() {
 
                 var startX = (timing.timePlaying % 2) / 2;
 
-                drawStroked(txt,-startX * textWidth,canvas.height * .5);
+                drawStroked(ctx, txt,-startX * textWidth,canvas.height * .5);
 
                 ctx.font = Math.round(scale * 0.5) + "px sans-serif";
                 ctx.textAlign = "center";
-                drawStroked("Press any key",canvas.width * .5,canvas.height * .6);
+                drawStroked(ctx, "Press any key",canvas.width * .5,canvas.height * .6);
             }
             else if (!menuOpened) {
                 if (!victory) {
@@ -490,7 +489,7 @@ function gameLoop() {
 
                 var textBase = 50;
                 var textOffset = 50;
-                roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fill: "none", stroke: colors[colorTheme][1], seed: roughSeed});
+                roughCanvas.rectangle(20, textBase * 0.5 + menuSelection * textOffset, width - 40, textOffset, {fillStyle: "none", stroke: colors[colorTheme][1], seed: roughSeed});
 
                 var txt = "Audio: ";
                 if (audioEnabled == true) {
@@ -582,6 +581,17 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
         levelCtx.drawImage(targetCanvas, PosX(targets[i].x) - targetMargin * 0.5, PosY(targets[i].y) - targetMargin * 0.5);
     }
 
+    //Gate image
+    for(let i = 0; i != gates.length; i++) {
+        if (gates[i].target <= amountOfLevelsSolved) {
+            levelCtx.globalAlpha = 0.2;
+        } else {
+            levelCtx.globalAlpha = 1;
+        }
+        levelCtx.drawImage(boxCanvas, PosX(gates[i].x) - boxMargin * 0.5, PosY(gates[i].y) - boxMargin * 0.5);
+    }
+    levelCtx.globalAlpha = 1;
+
     //Walls
     for(let i = 0; i != walls.length; i++) {
         levelCtx.drawImage(wallCanvas, PosX(walls[i].x) - wallMargin * 0.5, PosY(walls[i].y) - wallMargin * 0.5);
@@ -625,19 +635,34 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     }
 
     //LevelNode text
+    levelCtx.textAlign = "center";
+    levelCtx.textBaseline = "middle";
+    levelCtx.fillStyle = colors[colorTheme][2];
     for(let i = 0; i != levelNodes.length; i++) {
-        levelCtx.font = Math.round(0.8 * localScale)+"px sans-serif";
-        levelCtx.textAlign = "center";
-        levelCtx.textBaseline = "middle";
-        levelCtx.fillStyle = colors[colorTheme][2];
         //drawStroked()
-        levelCtx.fillText(levelNodes[i].target.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
+        levelCtx.font = Math.round(0.5 * localScale)+"px sans-serif";
+        levelCtx.fillText(levels[levelNodes[i].target][0].nr.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
         
         if (levelSolved[i+1]) {
             levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
             levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75)
         }
     }
+
+    //Gates text
+    levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
+    levelCtx.textAlign = "center";
+    levelCtx.textBaseline = "middle";
+    levelCtx.fillStyle = colors[colorTheme][2];
+    for(let i = 0; i != gates.length; i++) {
+        if (gates[i].target <= amountOfLevelsSolved) {
+            levelCtx.globalAlpha = 0.2;
+        } else {
+            levelCtx.globalAlpha = 1;
+        }
+        drawStroked(levelCtx, amountOfLevelsSolved + "/" + gates[i].target, PosX(gates[i].x) + boxCanvas.width * 0.5 - boxMargin * 0.5, PosY(gates[i].y) - boxMargin * 0.5 + boxCanvas.height * 0.5)
+    }
+    levelCtx.globalAlpha = 1;
 
     function tweenPlayer() {
         if (undoStack.length > 0) {
@@ -816,13 +841,7 @@ function loadLevel(number, resetStack = true) {
 
     victory = false;
 
-    if (metadata.name) {
-        levelName = (level) + ": "+ metadata.name;
-    } else if (!levelSolved.includes(true)) {
-        levelName = "WASD/Arrow Keys to move";
-    } else {
-        levelName = "";
-    }
+    setLevelName(level)
 
     /*if (levelSolved[level]) {
         levelName += " ✓";
@@ -841,6 +860,7 @@ function loadLevel(number, resetStack = true) {
     }
 
     var placedPlayer = false;
+    var gatesPlaced = 0;
 
     for(let y = 0; y < gridHeight; y++) {
         for(let x = 0; x < gridWidth; x++) {
@@ -885,6 +905,16 @@ function loadLevel(number, resetStack = true) {
                 case obj.RUBBLE:
                     rubble.push({x: x, y: y});
                     break;
+                case obj.GATE:
+                    var target = 1;
+                    switch(gatesPlaced) {
+                        case 1: target = 3; break;
+                        case 2: target = 6; break;
+                        case 3: target = 12; break;
+                        case 4: target = 15; break;
+                    }
+                    gates.push({x: x, y: y, target: target})
+                    gatesPlaced++;
             }
         }
     }
@@ -942,7 +972,7 @@ function wrapCoords(newX, newY) {
     return {x: newX, y: newY}
 }
 
-function hasThing(array, x, y) {
+function hasThing(array, x, y) { //Returns INDEX, not OBJECT!
     for(let i = 0; i != array.length; i++) {
         if (array[i].x == x && array[i].y == y) {
             return i;
@@ -971,6 +1001,17 @@ function hasRubble(x, y) {
     return hasThing(rubble, x, y)
 }
 
+function hasClosedGate(x, y) {
+    var gate = hasThing(gates, x, y)
+    if (gates[gate] != null) {
+        console.log(gates[gate].target, amountOfLevelsSolved)
+        if (gates[gate].target <= amountOfLevelsSolved) {
+            return null;
+        }
+    }
+    return gate;
+}
+
 function even(val) {
     return ((val % 2) == 0)
 }
@@ -980,7 +1021,7 @@ function EaseInOut(t) {
 }
 
 //From https://stackoverflow.com/questions/13627111/drawing-text-with-an-outer-stroke-with-html5s-canvas
-function drawStroked(text, x, y) {
+function drawStroked(ctx, text, x, y) {
     ctx.miterLimit = 2;
     ctx.strokeStyle = colors[colorTheme][2];
     ctx.lineWidth = 8;
@@ -1079,7 +1120,7 @@ function MovePlayer(horDelta, verDelta) {
     else if (horDelta == 1) {dir = "r"}
     else if (verDelta == 1) {dir = "d"}
     else if (verDelta == -1) {dir = "u"}
-    else {throw new Error("MovePlayer function did not recieve valid inputs.")}
+    else {throw new Error("MovePlayer function did not recieve valid arguments.")}
 
     console.log("------");
 
@@ -1148,7 +1189,7 @@ function MovePlayer(horDelta, verDelta) {
                 console.log("Movement not resolved","Could not push box");
             }
         }
-        else if (hasWall(targetX, targetY) === null) {
+        else if (hasWall(targetX, targetY) === null && hasClosedGate(targetX, targetY) === null) {
             player = {x: targetX, y: targetY};
             movementResolved = true;
         } else {
@@ -1173,13 +1214,7 @@ function MovePlayer(horDelta, verDelta) {
 
         if (level == 0) {
             var lvl = hasLevelNode(player.x, player.y);
-            if (lvl != null) {
-                levelName = (lvl+1)+": "+levels[lvl+1][0].name + " - [Space] to enter";
-            } else if (!levelSolved.includes(true)) {
-                levelName = "WASD/Arrow Keys to move";
-            } else {
-                levelName = "";
-            }
+            setLevelName(lvl,1);
         }
 
         //Check if won
@@ -1196,7 +1231,10 @@ function MovePlayer(horDelta, verDelta) {
 
         if (hasWon) {
             console.warn("Victory!",steps + " (" + steps.length + ")");
-            levelSolved[level] = true;
+            if (levelSolved[level] == false) {
+                levelSolved[level] = true;
+                amountOfLevelsSolved++;
+            }
             saveGame();
 
             audio("victory", true);
@@ -1268,7 +1306,10 @@ function loadGame() {
     //console.log(loadedValue);
     if (loadedValue != null) {
         for (var i = 0; i != loadedValue.length; i += 1) {
-            levelSolved[i] = loadedValue[i] == "t";
+            if (loadedValue[i] == "t") {
+                levelSolved[i] = true;
+                amountOfLevelsSolved++;
+            }
         }
     }
 
@@ -1282,4 +1323,19 @@ function loadGame() {
 
     var loadedValue = ls.getItem("banbanban-reduceMotion");
     reduceMotion = loadedValue == "true";
+}
+
+function setLevelName(lvl, offset = 0) {
+    if (level != 0 && !levelSolved.includes(true)) {
+        levelName = "Push the box to the goal!";
+    } else if (lvl != null && lvl + offset != 0) {
+        levelName = (lvl + offset)+": "+levels[lvl + offset][0].name;
+        if (level == 0) {
+            levelName += " - [Space] to enter";
+        }
+    } else if (!levelSolved.includes(true)) {
+        levelName = "WASD/Arrow Keys to move";
+    } else {
+        levelName = "";
+    }
 }
