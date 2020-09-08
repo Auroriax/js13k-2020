@@ -42,7 +42,7 @@ var camShakeY = 0;
 
 //var mousePos = new Vector2(0,0);
 
-var gameName = "Ban";
+var gameName = "Edge Not Found ";
 var subTitle = "Press any key";
 
 const obj = {
@@ -66,7 +66,10 @@ const obj = {
 
 var levelName = "";
 var levelOffsetX = 0;
-var levelOffsetY = 0; //QQQ Can't both be non-zero, might implement this later
+var levelOffsetY = 0; //Can't both be non-zero!
+
+var autoScrollX = 0; //Between -1 and 1
+var autoScrollY = 0;
 
 var prevLevelOffsetX = 0; //Between -1 and 1
 var prevLevelOffsetY = 0;
@@ -150,13 +153,11 @@ var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLe
 var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.2);
 var confirmInput = new InputHandler(["KeyX", "Space", "Enter"], [], timing, 0.1, 0.2);
 
-//var path = null;
-
 var reduceMotion = false;
 var colors = [];
-colors[0] = ["Sketchbook", "white", "black", "gray", "red"]; //name, bg, main, in-between, contrast
-colors[1] = ["Scratchpad", "#222", "white", "gray", "gold"];
-colors[2] = ["Golden Ticket", "#333", "#b29700", "#8e7900", "#efe7d6"];
+colors[0] = ["Sketchbook", "#ffffff", "#000000", "#808080", "#ff0000"]; //name, bg, main, in-between, contrast
+colors[1] = ["Scratchpad", "#202020", "#ffffff", "#808080", "#ffd700"];
+colors[2] = ["Golden Ticket", "#303030", "#b29700", "#8e7900", "#efe7d6"];
 colors[3] = ["Ikaniko", "#1E2A26", "#7CA49B", "#267B75", "#C8EEE5" ]
 colors[4] = ["BackFlipped", "#223e32", "#b3dd52", "#04bf00", "#A7C06D" ]
 var colorTheme = 0;
@@ -537,7 +538,7 @@ function gameLoop() {
 
                 var startX = 0
                 if (!reduceMotion) {
-                    var startX = (timing.timePlaying % 2) / 2;
+                    var startX = (timing.timePlaying % 5) / 5;
                 }
 
                 drawStroked(ctx, txt,-startX * textWidth,canvas.height * .5);
@@ -648,22 +649,22 @@ window.requestAnimationFrame(gameLoop);
 function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
     function drawWrapped(object, drawFunction) {
-        drawFunction();
+        drawFunction(0,0);
 
         //if (timeSinceLastAction >= timeToCompleteTween) {return;}
 
-        if (object.x == 0) {
+        if (object.x <= 0.5) {
             var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
             drawFunction(gridWidth * localScale, wrapY * localScale);
-        } else if (object.x == gridWidth-1) {
+        } else if (object.x >= gridWidth-1.5) {
             var wrapY = ((object.y - levelOffsetY + gridHeight) % gridHeight) - object.y;
             drawFunction(-gridWidth * localScale, wrapY * localScale);
         }
         
-        if (object.y == 0) {
+        if (object.y <= 0.5) {
             var wrapX = ((object.x + levelOffsetX + gridWidth) % gridWidth) - object.x;
             drawFunction(wrapX * localScale, gridHeight * localScale);
-        } else if (object.y == gridHeight-1) {
+        } else if (object.y >= gridHeight-1.5) {
             var wrapX = ((object.x - levelOffsetX + gridWidth) % gridWidth) - object.x;
             drawFunction(wrapX * localScale, -gridHeight * localScale);
         }
@@ -674,27 +675,47 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     var playerTween = tweenPlayer();
 
     //Path
-    if (undoStack.length > 0) {
-        var amt = 12;
-        var cur = 0;
-        for(var i = Math.max(0, undoStack.length - amt); i != undoStack.length; i += 1) {
-            cur++;
+    if (undoStack.length > 0 && !reduceMotion) {
+        var amt = Clamp(undoStack.length, 1, 11);
+        for(var i = 0; i < amt; i += 1) {
+            var index = undoStack.length - amt + i;
 
-            levelCtx.globalAlpha = (cur / amt) * 0.5 + (1/amt) * (1-(timeSinceLastAction / timeToCompleteTween));
+            if (steps[index] == " " || index < 0 || index > undoStack.length) {
+                break;
+            }
 
-            var p1 = undoStack[i].player;
-            var p2;
-            if (i == undoStack.length-1) {
-                p2 = playerTween;
-            } else {
-                p2 = undoStack[i+1].player;
-            } //QQQ Make sure line wraps around screen properly, and stays intact during shifts
-            roughLevel.line(PosX(p1.x + .5), PosY(p1.y + .5), PosX(p2.x + .5), PosY(p2.y + .5), {strokeWidth: localScale * 0.25, stroke: colors[colorTheme][3], seed: roughSeed});
-            //console.log(PosX(p1.x + .5))
+            var percent = 1;
+            if (index == undoStack.length-1) {
+                percent = timeSinceLastAction / timeToCompleteTween;
+            };
+
+            var blend = Math.max(0, ((i + (1-percent)) / amt) * 0.25);
+            var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3],blend)
+
+            var p1 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
+            var p2 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
+            switch (steps[index].toLowerCase()) {
+                case "u":
+                    p1.y += 0.2;
+                    p2.y -= 1.2 * percent; break;
+                case "d":
+                    p1.y -= 0.2;
+                    p2.y += 1.2 * percent; break;
+                case "l":
+                    p1.x += 0.2;
+                    p2.x -= 1.2 * percent; break;
+                case "r":
+                    p1.x += 0.2;
+                    p2.x += 1.2 * percent; break;
+            }
+
+            function drawLine(offsetX = 0, offsetY = 0) {
+                roughLevel.line(PosX(p1.x + .5)+offsetX, PosY(p1.y + .5) +offsetY, PosX(p2.x + .5) +offsetX, PosY(p2.y + .5) +offsetY, {strokeWidth: localScale * 0.4, stroke: clr, seed: roughSeed+i, roughness: 0.75});
+            }
+
+            drawWrapped(p1, drawLine);
         }
     }
-    //console.log(levelCtx.globalAlpha);
-    levelCtx.globalAlpha = 1;
 
     //Rubble
     for(let i = 0; i != rubble.length; i++) {
@@ -920,8 +941,6 @@ function loadLevel(number, resetStack = true) {
     camShakeX = 0;
     camShakeY = 0;
 
-    //path = null;
-
     freshState = true;
 
     victory = false;
@@ -942,6 +961,18 @@ function loadLevel(number, resetStack = true) {
         levelOffsetY = metadata.yOff;
     } else {
         levelOffsetY = 0;
+    }
+
+    if (metadata.autoX) {
+        autoScrollX = metadata.autoX;
+    } else {
+        autoScrollX = 0;
+    }
+
+    if (metadata.autoY) {
+        autoScrollY = metadata.autoX;
+    } else {
+        autoScrollY = 0;
     }
 
     var placedPlayer = false;
@@ -1193,33 +1224,11 @@ function MovePlayer(horDelta, verDelta) {
 
                 if (boxes[foundBox].shift != 0) {
                     if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal/x
-                        if (levelOffsetY == 0) {
-                            levelOffsetX -= horDelta;
-                            prevLevelOffsetX = -horDelta;
-                            timeSinceLastAction = 0;
-                            if (levelOffsetX >= gridWidth * 0.5) {
-                                levelOffsetX -= gridWidth;
-                            } else if (levelOffsetX <= -gridWidth * 0.5) {
-                                levelOffsetX += gridWidth;
-                            }
-                        } else {
-                            console.log("Shifting not resolved: Cannot shift X when Y is shifted")
-                        }
+                        ShiftX(horDelta);
                     }
                     
                     if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical/y
-                        if (levelOffsetX == 0) {
-                            levelOffsetY -= verDelta;
-                            prevLevelOffsetY = -verDelta;
-                            timeSinceLastAction = 0;
-                            if (levelOffsetY >= gridHeight * 0.5) {
-                                levelOffsetY -= gridHeight;
-                            } else if (levelOffsetY <= -gridHeight * 0.5) {
-                                levelOffsetY += gridHeight;
-                            }
-                        } else {
-                            console.log("Shifting not resolved: Cannot shift Y when X is shifted")
-                        }
+                        ShiftY(verDelta);
                     }
                 }
             } else {
@@ -1252,9 +1261,15 @@ function MovePlayer(horDelta, verDelta) {
             setLevelName(lvl,1);
         }
 
+        if (autoScrollX) {
+            ShiftX(autoScrollX);
+        } else if (autoScrollY) {
+            ShiftY(autoScrollY);
+        }
+
         //Check if won
         var hasWon = true;
-        if (targets.length > 0) {
+        if (boxPushed && targets.length > 0) { //Only check win condition when a box has moved
             for(let i = 0; i != targets.length; i++) {
                 if (hasBox(targets[i].x, targets[i].y) === null) {
                     hasWon = false; break;
@@ -1293,6 +1308,36 @@ function MovePlayer(horDelta, verDelta) {
         }
         camShakeX = horDelta * 12;
         camShakeY = verDelta * 12;
+    }
+
+    function ShiftX(horDelta) {
+        if (levelOffsetY == 0) {
+            levelOffsetX -= horDelta;
+            prevLevelOffsetX = -horDelta;
+            timeSinceLastAction = 0;
+            if (levelOffsetX >= gridWidth * 0.5) {
+                levelOffsetX -= gridWidth;
+            } else if (levelOffsetX <= -gridWidth * 0.5) {
+                levelOffsetX += gridWidth;
+            }
+        } else {
+            console.log("Shifting not resolved: Cannot shift X when Y is shifted")
+        }
+    }
+
+    function ShiftY(verDelta) {
+        if (levelOffsetX == 0) {
+            levelOffsetY -= verDelta;
+            prevLevelOffsetY = -verDelta;
+            timeSinceLastAction = 0;
+            if (levelOffsetY >= gridHeight * 0.5) {
+                levelOffsetY -= gridHeight;
+            } else if (levelOffsetY <= -gridHeight * 0.5) {
+                levelOffsetY += gridHeight;
+            }
+        } else {
+            console.log("Shifting not resolved: Cannot shift Y when X is shifted")
+        }
     }
 }
 
@@ -1406,3 +1451,18 @@ function setLevelName(lvl, offset = 0) {
         timeSinceLevelNameChanged = 0;
     }
 }
+
+//https://stackoverflow.com/a/56348573
+// blend two hex colors together by an amount
+function blendColors(colorA, colorB, amount) {
+    const [rA, gA, bA] = colorA.match(/\w\w/g).map((c) => parseInt(c, 16));
+    const [rB, gB, bB] = colorB.match(/\w\w/g).map((c) => parseInt(c, 16));
+    const r = Math.round(rA + (rB - rA) * amount).toString(16).padStart(2, '0');
+    const g = Math.round(gA + (gB - gA) * amount).toString(16).padStart(2, '0');
+    const b = Math.round(bA + (bB - bA) * amount).toString(16).padStart(2, '0');
+    return '#' + r + g + b;
+  }
+  
+  //console.log(blendColors('#00FF66', '#443456', 0.5));
+
+console.warn("Todo: Polish, QA, make final level");

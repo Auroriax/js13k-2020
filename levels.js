@@ -152,9 +152,9 @@ levels.push([
 ]);
 levels.push([
     {nr: 400, name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
-    "###..r#",
-    "tpb..r#",
-    "#######"
+    "rrr#..r#",
+    ".pb...r#",
+    "#t######"
 ]);
 levels.push([
     {nr: 401, name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
@@ -188,10 +188,10 @@ levels.push([
     "bq#.#.b",
 ]);
 levels.push([
-    {nr: 404, name: "Edge Not Found"},
-    "p-..........",
+    {nr: 404, name: "Edge Not Found", autoX: 1},
+    "...........",
     "#.#.###.#.#",
-    "#.#.#.#.#t#",
+    "#p#.#.#.#t#",
     "###.#.#.###",
     "..#.###...#",
 ]);
