@@ -97,8 +97,7 @@ var favicon = null;
 var wroteFavicon = false;
 onload = function(e) {
     favicon = document.querySelector('link[rel="icon"]');
-    //console.log("Page fully loaded");
-}
+};
 
 var level = 0;
 
@@ -158,8 +157,8 @@ var colors = [];
 colors[0] = ["Sketchbook", "#ffffff", "#000000", "#808080", "#ff0000"]; //name, bg, main, in-between, contrast
 colors[1] = ["Scratchpad", "#202020", "#ffffff", "#808080", "#ffd700"];
 colors[2] = ["Golden Ticket", "#303030", "#b29700", "#8e7900", "#efe7d6"];
-colors[3] = ["Ikaniko", "#1E2A26", "#7CA49B", "#267B75", "#C8EEE5" ]
-colors[4] = ["BackFlipped", "#223e32", "#b3dd52", "#04bf00", "#A7C06D" ]
+colors[3] = ["Ikaniko", "#1E2A26", "#7CA49B", "#267B75", "#C8EEE5"];
+colors[4] = ["BackFlipped", "#223e32", "#b3dd52", "#04bf00", "#A7C06D"];
 var colorTheme = 0;
 var audioEnabled = true;
 
@@ -174,7 +173,7 @@ window.onresize = function() {
     canvas.width = canvas.clientWidth;
     canvas.height = canvas.clientHeight;
     dirtyRender = true;
-}
+};
 
 canvas.width = canvas.clientWidth;
 canvas.height = canvas.clientHeight;
@@ -228,8 +227,8 @@ function gameLoop() {
 
                     if (level == 0) {
                         var lvl = hasLevelNode(player.x, player.y);
-                        setLevelName(lvl,1)
-                    }
+                        setLevelName(lvl,1);
+                    };
 
                     timeSinceLastAction = timeToCompleteTween;
 
@@ -338,7 +337,7 @@ function gameLoop() {
             } else {
                 if (level == levels.length-1) {
                     gameName = "Victory! ";
-                    subTitle = "Thank you for playing!"
+                    subTitle = "Thank you for playing!";
                     titleScreen = true;
                     audio("gameend");
                 }
@@ -430,7 +429,7 @@ function gameLoop() {
             //console.log("Set favicon");
         }
 
-        var shaking = (camShakeX != 0 || camShakeY != 0)
+        var shaking = (camShakeX != 0 || camShakeY != 0);
         var reduceCamShake = 2;
         if (camShakeX > 0) {camShakeX = Math.max(0, camShakeX - reduceCamShake)}
         else if (camShakeX < 0) {camShakeX = Math.min(0, camShakeX + reduceCamShake)}
@@ -512,7 +511,7 @@ function gameLoop() {
             if (!titleScreen) {
                 ctx.textAlign = "left";
                 ctx.font = "40px sans-serif";
-                ctx.globalAlpha = EaseInOut(timeSinceLevelNameChanged / timeToDisplayLevelName)
+                ctx.globalAlpha = EaseInOut(timeSinceLevelNameChanged / timeToDisplayLevelName);
                 drawStroked(ctx, levelName, 40, canvas.height - 40);
                 ctx.globalAlpha = 1;
             }
@@ -536,7 +535,7 @@ function gameLoop() {
 
                 txt = txt.repeat(amount);
 
-                var startX = 0
+                var startX = 0;
                 if (!reduceMotion) {
                     var startX = (timing.timePlaying % 5) / 5;
                 }
@@ -550,7 +549,7 @@ function gameLoop() {
             else if (!menuOpened) {
                 if (!victory) {
                     //Menu
-                    roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                    roughCanvas.rectangle(-5, -5, 85, 85, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)});
                     ctx.fillText("[Esc]",50,60);
  
                     if (level != 0) {
@@ -561,7 +560,7 @@ function gameLoop() {
                         }
 
                         //Reset
-                        roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                        roughCanvas.rectangle(canvas.width-160, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)});
                         ctx.fillText("[R] Retry",canvas.width-110,canvas.height - 55);
 
                         if (undoStack.length > 0) {
@@ -570,7 +569,7 @@ function gameLoop() {
                             ctx.globalAlpha = 0.25;
                         }
                         //Undo
-                            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10})
+                            roughCanvas.rectangle(canvas.width-280, canvas.height - 80, 100, 50, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2) + 10});
                             ctx.fillText("[Z] Undo",canvas.width-230,canvas.height - 55);
                         }
                     }
@@ -581,7 +580,7 @@ function gameLoop() {
                     var growth = EaseInOut(timeSinceMenuToggled / timeToToggleMenu);
                 }
                 var width = 400 * growth;
-                roughCanvas.rectangle(-5, -5, width + 5, 55 + 250 * growth, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)})
+                roughCanvas.rectangle(-5, -5, width + 5, 55 + 250 * growth, {fill: colors[colorTheme][2], fillWeight: 4, stroke: "none", seed: Math.round(roughSeed / 2)});
 
                 var textBase = 50;
                 var textOffset = 50 * growth;
@@ -635,11 +634,11 @@ function gameLoop() {
         
         const canvas = document.getElementById("canvas");
         if (canvas) {
-            console.log("Size of the canvas:",{width: canvas.width, height: canvas.height})
+            console.log("Size of the canvas:",{width: canvas.width, height: canvas.height});
             ctx.font = "30px sans-serif";
             ctx.fillStyle = "red";
             ctx.textAlign = "left";
-            ctx.fillText("Whoops, the game crashed! See the console for more info.",50,50)
+            ctx.fillText("Whoops, the game crashed! See the console for more info.",50,50);
         }
     }
 };
@@ -690,7 +689,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
             };
 
             var blend = Math.max(0, ((i + (1-percent)) / amt) * 0.25);
-            var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3],blend)
+            var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3],blend);
 
             var p1 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
             var p2 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
@@ -786,14 +785,14 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
     for(let i = 0; i != levelNodes.length; i++) {
         //drawStroked()
         levelCtx.font = Math.round(0.5 * localScale)+"px sans-serif";
-        levelCtx.fillText(levels[levelNodes[i].target][0].nr.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5)
+        levelCtx.fillText(levels[levelNodes[i].target][0].nr.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5);
         
         if (levelSolved[i+1] == 2) {
             levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
             levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75);
         } else if (levelSolved[i+1] == 0) {
             levelCtx.font = "bold " + Math.round(0.25 * localScale)+"px sans-serif";
-            levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.8)
+            levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.8);
         }
     }
 
@@ -945,7 +944,7 @@ function loadLevel(number, resetStack = true) {
 
     victory = false;
 
-    setLevelName(level)
+    setLevelName(level);
 
     if (levelSolved[level] == 2 && level != 0) {
         levelName += " ✓";
@@ -1064,7 +1063,7 @@ function loadLevel(number, resetStack = true) {
                     rubble.push({x: x, y: y});
                     break;
                 case obj.GATE:
-                    gates.push({x: x, y: y, target: metadata.gates[gatesPlaced]})
+                    gates.push({x: x, y: y, target: metadata.gates[gatesPlaced]});
                     gatesPlaced++;
             }
         }
@@ -1153,7 +1152,7 @@ function hasRubble(x, y) {
 }
 
 function hasClosedGate(x, y) {
-    var gate = hasThing(gates, x, y)
+    var gate = hasThing(gates, x, y);
     if (gates[gate] != null) {
         //console.log(gates[gate].target, amountOfLevelsSolved)
         if (gates[gate].target <= amountOfLevelsSolved) {

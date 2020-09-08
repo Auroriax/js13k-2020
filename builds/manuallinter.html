@@ -34,6 +34,10 @@ Manual Linter brings all your assets (html, css, and js) into one html file, and
     <textarea id="js_name_4" rows="1" cols="200" placeholder="Filename of a final JS file here">game.js</textarea> <br>
     <textarea id="js_4" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div>
+<div>
+    <textarea id="js_name_5" rows="1" cols="200" placeholder="Filename of a final JS file here">zzfx.js</textarea> <br>
+    <textarea id="js_5" rows="5" cols="200" placeholder="Paste JS here"></textarea>
+</div>
 <button onclick="lint()" type="button"><b>Minify & lint all</b></button><br> <br>
 Output <div id="stats"></div><br>
 <textarea id="output" rows="5" cols="200" placeholder="All your code inside one HTML file"></textarea>
@@ -56,6 +60,8 @@ function HtmlLoaded() {
     js_3 = document.getElementById("js_3");
     js_name_4 = document.getElementById("js_name_4");
     js_4 = document.getElementById("js_4");
+    js_name_5 = document.getElementById("js_name_5");
+    js_5 = document.getElementById("js_5");
     output = document.getElementById("output");
     stats = document.getElementById("stats");
 
@@ -66,7 +72,7 @@ function lint() {
     if (inited == false) {stats.innerHTML = "Not initialized yet, please wait a bit longer"; return;}
 
     var htmlmin = striphtml(html.value); 
-    var chars = html.value.length + css.value.length + js_1.value.length + js_2.value.length + js_3.value.length + js_4.value.length;
+    var chars = html.value.length + css.value.length + js_1.value.length + js_2.value.length + js_3.value.length + js_4.value.length + js_5.value.length;
     htmlmin.replace(/(<!--[^]+?->|\s)+/g," ").replace(/ (?=<|$)|<\/[tl].>|<.p> *(<[p/])| ?\/?(>)/gi,"$1$2");
 
     var cssmin = stripcss(css.value);
@@ -74,12 +80,14 @@ function lint() {
     var js2 = stripjs(js_2.value);
     var js3 = stripjs(js_3.value);
     var js4 = stripjs(js_4.value);
+    var js5 = stripjs(js_5.value);
     
     htmlmin = htmlmin.replace('<link rel="stylesheet" href="'+css_name.value+'">',"\n<style>"+cssmin+"</style>\n");
     htmlmin = htmlmin.replace('<script src="'+js_name_1.value+'"></script>',"\n<script>"+js1+"</script>\n");
     htmlmin = htmlmin.replace('<script src="'+js_name_2.value+'"></script>',"\n<script>"+js2+"</script>\n");
     htmlmin = htmlmin.replace('<script src="'+js_name_3.value+'"></script>',"\n<script>"+js3+"</script>\n");
     htmlmin = htmlmin.replace('<script src="'+js_name_4.value+'"></script>',"\n<script>"+js4+"</script>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_5.value+'"></script>',"\n<script>"+js5+"</script>\n");
     
     output.value = htmlmin
 
