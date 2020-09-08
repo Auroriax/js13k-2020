@@ -2,9 +2,9 @@
 
 //TIMING
 class Timing {
-	constructor(minimumFrameLength, maximumFrameLength) {
-		this.minimumFrameLength = minimumFrameLength;
-		this.maximumFrameLength = maximumFrameLength;
+	constructor(minFrameLength, maxFrameLength) {
+		this.minFrameLength = minFrameLength;
+		this.maxFrameLength = maxFrameLength;
 		this.lastUpdate = new Date();
 
 		this.currentFrameLength = 0;
@@ -26,7 +26,7 @@ class Timing {
 		this.stepsProcessed += 1;
 	}
 
-	get fps() {
+	fps() {
 		return (1 / this.currentFrameLength)
 	}
 
@@ -95,6 +95,7 @@ class InputHandler {
 		this.timer = timer;
 		this.prevHeldTime = 0;
 		this.heldTime = 0;
+		this.fired = false;
 
 		this.waitForRefiring = timeForRefiring;
 		this.firstWaitForRefiring = timeForRefiring + extraTimeForFirstRefire;
@@ -207,7 +208,6 @@ class InputHandler {
 	}
 }
 
-
 ///MISC
 function Clamp(nr, min, max) {
 	return Math.max(min, Math.min(nr, max));
@@ -230,4 +230,4 @@ function SpliceUnique(array, EntryToSplice) {
 	return array;
 }
 
-console.log("🍅 Tomato loaded successfully! Version 0.1.0")
+console.log("🍅 Tomato loaded successfully! Version 0.1.0");
