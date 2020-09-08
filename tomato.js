@@ -230,4 +230,4 @@ function SpliceUnique(array, EntryToSplice) {
 	return array;
 }
 
-console.log("🍅 Tomato loaded successfully! Version 0.1.0");
+//console.log("🍅 Tomato loaded successfully! Version 0.1.0");
