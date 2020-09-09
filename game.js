@@ -14,6 +14,10 @@ const levelCanvas = document.createElement("canvas");
 const levelCtx = levelCanvas.getContext("2d");
 const roughLevel = rough.canvas(levelCanvas);
 
+const pathCanvas = document.createElement("canvas");
+const pathCtx = pathCanvas.getContext("2d");
+const roughPath = rough.canvas(pathCanvas);
+
 const wallCanvas = document.createElement("canvas");
 const wallCtx = wallCanvas.getContext("2d");
 const roughWall = rough.canvas(wallCanvas);
@@ -83,6 +87,8 @@ var level = 0;
 var gridHeight = levels[level].length;
 var gridWidth = levels[level][0].length;
 
+setCanvasScales(scale);
+
 var player = {x: 0, y: 0};
 //var playerTarget 
 var walls = [];
@@ -144,7 +150,7 @@ var freshState = true; //If the level was either just loaded or just reset
 var victory = false; //If the level is finished, no input is accepted until the next level loads
 var targetLevel = 0;
 
-var dirtyRender = true; //Change when theme was changed.
+var dirtyRender = true; //Mark as true when theme changes and on some other rare occurences.
 var previousScale = 0;
 
 window.onresize = function() {
@@ -290,10 +296,13 @@ function gameLoop() {
 			timeSinceLevelStart = timeToLoadLevel * .5;
 		}
 
+		var zoom = 1;
 		if (canvas.width < 700 || canvas.height < 700) {
 			scale = 40;
+			zoom = 0.6;
 		} else if (canvas.width < 1000 || canvas.height < 900) {
 			scale = 55;
+			zoom = 0.8;
 		} else {
 			scale = 70;
 		}
@@ -302,13 +311,13 @@ function gameLoop() {
 		var localScale = scale;
 		if (timeSinceLevelStart < timeToLoadLevel) {
 			alph = timeSinceLevelStart / timeToLoadLevel;
-			localScale = (scale + 20) - 20 * EaseInOut(timeSinceLevelStart / timeToLoadLevel);
+			localScale = (scale + 20 * zoom) - 20 * zoom * EaseInOut(timeSinceLevelStart / timeToLoadLevel);
 		} else if (timeSinceLevelWon < timeUntilLevelEnd && level != 0) {
 			alph = 1 - (timeSinceLevelWon / timeUntilLevelEnd);
-			localScale = (scale - 50) + 50 * (1-EaseInOut(timeSinceLevelWon / timeUntilLevelEnd));
+			localScale = (scale - 50 * zoom) + 50 * zoom * (1-EaseInOut(timeSinceLevelWon / timeUntilLevelEnd));
 		} else if (timeSinceLevelWon < timeUntilLevelSelected && level == 0) {
 			alph = 1 - (timeSinceLevelWon / timeUntilLevelSelected);
-			localScale = (scale) - 20 * (EaseInOut(timeSinceLevelWon / timeUntilLevelSelected));
+			localScale = (scale) - 20 * zoom * (EaseInOut(timeSinceLevelWon / timeUntilLevelSelected));
 		} else if (((timeSinceLevelWon >= timeUntilLevelEnd && level != 0) || (timeSinceLevelWon >= timeUntilLevelSelected && level == 0)) && victory) {
 			if (level == 0) {
 				loadLevel(targetLevel);
@@ -342,23 +351,9 @@ function gameLoop() {
 			}
 
 			rerendered = true;
-			dirtyRender = false;
 
 			if (localScale != previousScale) {
-				playerCanvas.width = localScale;
-				playerCanvas.height = localScale;
-
-				wallCanvas.width = localScale+wallMargin;
-				wallCanvas.height = localScale+wallMargin;
-
-				boxCanvas.width = localScale+boxMargin;
-				boxCanvas.height = localScale+boxMargin;
-
-				rubbleCanvas.width = localScale+rubbleMargin;
-				rubbleCanvas.height = localScale+rubbleMargin;
-
-				targetCanvas.width = localScale+targetMargin;
-				targetCanvas.height = localScale+targetMargin;
+				setCanvasScales(localScale);
 			} else {
 				PlayerCtx.clearRect(0,0, playerCanvas.width, playerCanvas.height);
 				PlayerCtx.beginPath();
@@ -421,10 +416,16 @@ function gameLoop() {
 			if (localScale != previousScale || dirtyRender) {
 				levelCanvas.width = horWidth+levelMargin;
 				levelCanvas.height = verHeight+levelMargin;
+				pathCanvas.width = horWidth+levelMargin;
+				pathCanvas.height = verHeight+levelMargin;
 			} else {
 				levelCtx.clearRect(0,0, levelCanvas.width, levelCanvas.height);
 				levelCtx.beginPath();
+				pathCtx.clearRect(0,0, pathCanvas.width, pathCanvas.height);
+				pathCtx.beginPath();
 			}
+			
+			dirtyRender = false;
 
 			drawLevel(0, 0, gridWidth, gridHeight, localScale);
 
@@ -455,34 +456,39 @@ function gameLoop() {
 			ctx.fillStyle = colors[colorTheme][1];
 			ctx.fillRect(0,0,canvas.width, canvas.height);
 
-			for(let y = screenHeightRatio; y >= 0; y--) {
-				for(let x = screenWidthRatio; x >= 0; x--) {
-					ctx.globalAlpha = M.max(0, alph - M.abs(y) * 0.1 - M.abs(x * 0.1));
+			function drawRepeat(img) {
+				for(let y = 0; y <= screenHeightRatio; y++) {
+					for(let x = 0; x <= screenWidthRatio; x++) {
+						ctx.globalAlpha = M.max(0, alph - M.abs(y) * 0.1 - M.abs(x * 0.1));
 
-					if (ctx.globalAlpha > 0) {
-						ctx.drawImage(levelCanvas, 
-						cameraX + horWidth * x + tweenOffsetX * localScale * y,
-						cameraY + verHeight * y + tweenOffsetY * localScale * x);
+						if (ctx.globalAlpha > 0) {
+							ctx.drawImage(img, 
+							cameraX + horWidth * x + tweenOffsetX * localScale * y,
+							cameraY + verHeight * y + tweenOffsetY * localScale * x);
 
-						if (x != 0 && y != 0) {
-						ctx.drawImage(levelCanvas, 
-								cameraX + horWidth * (-x) + tweenOffsetX * localScale * (-y),
-								cameraY + verHeight * (-y) + tweenOffsetY * localScale * (-x));
-						}
-							
-						if (y != 0) {
-							ctx.drawImage(levelCanvas, 
-								cameraX + horWidth * (x) + tweenOffsetX * localScale * (-y),
-								cameraY + verHeight * (-y) + tweenOffsetY * localScale * (x));
-						}
-						if (x != 0) {
-							ctx.drawImage(levelCanvas, 
-								cameraX + horWidth * (-x) + tweenOffsetX * localScale * (y),
-								cameraY + verHeight * (y) + tweenOffsetY * localScale * (-x));
+							if (x != 0 && y != 0) {
+							ctx.drawImage(img, 
+									cameraX + horWidth * (-x) + tweenOffsetX * localScale * (-y),
+									cameraY + verHeight * (-y) + tweenOffsetY * localScale * (-x));
+							}
+								
+							if (y != 0) {
+								ctx.drawImage(img, 
+									cameraX + horWidth * (x) + tweenOffsetX * localScale * (-y),
+									cameraY + verHeight * (-y) + tweenOffsetY * localScale * (x));
+							}
+							if (x != 0) {
+								ctx.drawImage(img, 
+									cameraX + horWidth * (-x) + tweenOffsetX * localScale * (y),
+									cameraY + verHeight * (y) + tweenOffsetY * localScale * (-x));
+							}
 						}
 					}
 				}
 			}
+
+			drawRepeat(pathCanvas);
+			drawRepeat(levelCanvas);
 
 			//ctx.globalAlpha = alph;
 			//ctx.drawImage(levelCanvas, M.round(cameraX + camShakeX * shakeMultiplier), M.round(cameraY + camShakeY * shakeMultiplier));
@@ -672,12 +678,12 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 		var last = steps.lastIndexOf(" ");
 		var tot = lnt - last;
 
-		var amt = Clamp(undoStack.length, 1, 9);
+		var amt = Clamp(undoStack.length, 1, 7);
 		amt = M.min(amt, tot);
 		for(var i = 0; i < amt; i += 1) {
 			var index = undoStack.length - amt + i;
 
-			if (index < 0 || index > undoStack.length) {
+			if (index < 0 || index > undoStack.length || index > steps.length) {
 				break;
 			}
 
@@ -689,8 +695,10 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			var blend = M.max(0.01, ((i + (percent)) / (amt)) * 0.25 - ((1 / amt * 0.25)));
 			var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3], blend);
 
+			//var p1; var p2;
 			var p1 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
 			var p2 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
+
 			switch (steps[index].toLowerCase()) {
 				case "u":
 					p1.y += 0.2;
@@ -707,7 +715,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			}
 
 			function drawLine(offsetX = 0, offsetY = 0) {
-				roughLevel.line(PosX(p1.x + .5)+offsetX, PosY(p1.y + .5) +offsetY, PosX(p2.x + .5) +offsetX, PosY(p2.y + .5) +offsetY, {strokeWidth: localScale * 0.4, stroke: clr, seed: roughSeed+i, roughness: 0.75});
+				roughPath.line(PosX(p1.x + .5)+offsetX, PosY(p1.y + .5) +offsetY, PosX(p2.x + .5) +offsetX, PosY(p2.y + .5) +offsetY, {strokeWidth: localScale * 0.4, stroke: clr, seed: roughSeed+i, roughness: 0.75});
 			}
 
 			drawWrapped(p1, drawLine);
@@ -924,6 +932,8 @@ function loadLevel(number, resetStack = true) {
 	}
 
 	saveGame();
+
+	dirtyRender = true;
 	
 	player = {x: 0, y: 0};
 	walls.length = 0;
@@ -1464,6 +1474,23 @@ function blendColors(colorA, colorB, amount) {
 	const b = M.round(bA + (bB - bA) * amount).toString(16).padStart(2, '0');
 	return '#' + r + g + b;
   }
+
+function setCanvasScales(ls) {
+	playerCanvas.width = ls;
+	playerCanvas.height = ls;
+
+	wallCanvas.width = ls+wallMargin;
+	wallCanvas.height = ls+wallMargin;
+
+	boxCanvas.width = ls+boxMargin;
+	boxCanvas.height = ls+boxMargin;
+
+	rubbleCanvas.width = ls+rubbleMargin;
+	rubbleCanvas.height = ls+rubbleMargin;
+
+	targetCanvas.width = ls+targetMargin;
+	targetCanvas.height = ls+targetMargin;
+}
   
   //console.log(blendColors('#00FF66', '#443456', 0.5));
 
