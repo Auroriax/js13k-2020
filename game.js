@@ -72,7 +72,9 @@ onkeydown = function(e) {
 };
 
 window.onbeforeunload = function() {
-	return "Quit?";
+	if (level != 0) {
+		return "Quit?";
+	}
 };
 
 var favicon = null;
@@ -509,7 +511,7 @@ function gameLoop() {
 			//Draw level name
 			if (!titleScreen) {
 				ctx.textAlign = "left";
-				ctx.font = 40 + S;
+				ctx.font = (40 * zoom) + S;
 				ctx.globalAlpha = EaseInOut(timeSinceLevelNameChanged / timeToDisplayLevelName);
 				drawStroked(ctx, levelName, 40, canvas.height - 40);
 				ctx.globalAlpha = 1;
