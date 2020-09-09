@@ -1428,12 +1428,12 @@ function loadGame() {
 		}
 	}
 
-	var loadedValue = parseInt(ls.getItem("enf-c", 0));
+	var loadedValue = parseInt(ls.getItem("enf-c"), 0);
 	if (loadedValue >= 0 && loadedValue < colors.length) {
 		colorTheme = loadedValue;
 	}
 
-	var loadedValue = parseInt(ls.getItem("enf-t", 0));
+	var loadedValue = parseInt(ls.getItem("enf-t"), 0);
 	if (loadedValue >= 0 && loadedValue < levels.length) {
 		targetLevel = loadedValue;
 	}
