@@ -184,14 +184,14 @@ levels.push([
 	"#rrtrr#",
 	"...+",
 	"#rrtrr#",
-	"q#r.r#q", //The q's mark possible target locations
-	"bq#.#.b",
+	".#r.r#.", //The q's mark possible target locations
+	"b.#.#.b",
 ]);
 levels.push([
-	{nr: 404, name: "Edge Not Found", autoX: 1},
-	"",
-	"#.#.###.#.#",
-	"#p#.#.#.#t#",
-	"###.#.#.###",
-	"..#.###...#",
+	{nr: 404, name: "Edge Not Found", autoX: -1},
+	"#.##.#...#",
+	"#b##.#...#",
+	"#p##t#####",
+	"##..######",
+	"##..######"
 ]);

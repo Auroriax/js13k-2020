@@ -455,22 +455,37 @@ function gameLoop() {
 			ctx.fillStyle = colors[colorTheme][1];
 			ctx.fillRect(0,0,canvas.width, canvas.height);
 
-			for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
-				for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
-					if (x != 0 || y != 0) 
-					{
-						ctx.globalAlpha = M.max(0, alph - M.abs(y) * 0.1 - M.abs(x * 0.1));
-						if (ctx.globalAlpha > 0) {
+			for(let y = screenHeightRatio; y >= 0; y--) {
+				for(let x = screenWidthRatio; x >= 0; x--) {
+					ctx.globalAlpha = M.max(0, alph - M.abs(y) * 0.1 - M.abs(x * 0.1));
+
+					if (ctx.globalAlpha > 0) {
+						ctx.drawImage(levelCanvas, 
+						cameraX + horWidth * x + tweenOffsetX * localScale * y,
+						cameraY + verHeight * y + tweenOffsetY * localScale * x);
+
+						if (x != 0 && y != 0) {
+						ctx.drawImage(levelCanvas, 
+								cameraX + horWidth * (-x) + tweenOffsetX * localScale * (-y),
+								cameraY + verHeight * (-y) + tweenOffsetY * localScale * (-x));
+						}
+							
+						if (y != 0) {
 							ctx.drawImage(levelCanvas, 
-							cameraX + horWidth * x + tweenOffsetX * localScale * y,
-							cameraY + verHeight * y + tweenOffsetY * localScale * x);
+								cameraX + horWidth * (x) + tweenOffsetX * localScale * (-y),
+								cameraY + verHeight * (-y) + tweenOffsetY * localScale * (x));
+						}
+						if (x != 0) {
+							ctx.drawImage(levelCanvas, 
+								cameraX + horWidth * (-x) + tweenOffsetX * localScale * (y),
+								cameraY + verHeight * (y) + tweenOffsetY * localScale * (-x));
 						}
 					}
 				}
 			}
 
-			ctx.globalAlpha = alph;
-			ctx.drawImage(levelCanvas, M.round(cameraX + camShakeX * shakeMultiplier), M.round(cameraY + camShakeY * shakeMultiplier));
+			//ctx.globalAlpha = alph;
+			//ctx.drawImage(levelCanvas, M.round(cameraX + camShakeX * shakeMultiplier), M.round(cameraY + camShakeY * shakeMultiplier));
 			const borderOffset = 5;
 			roughCanvas.rectangle(M.round(cameraX-borderOffset + camShakeX * 0.5 * shakeMultiplier), M.round(cameraY-borderOffset + camShakeY * 0.5 * shakeMultiplier), 
 				horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
@@ -628,7 +643,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 	function drawWrapped(object, drawFunction) {
 		drawFunction(0,0);
 
-		//if (timeSinceLastAction >= timeToCompleteTween) {return;}
+		if (autoScrollX || autoScrollY /*timeSinceLastAction >= timeToCompleteTween*/) {return;}
 
 		if (object.x <= 0.5) {
 			var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
@@ -671,8 +686,8 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 				percent = timeSinceLastAction / timeToCompleteTween;
 			};
 
-			var blend = M.max(0, ((i + (1-percent)) / amt) * 0.25);
-			var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3],blend);
+			var blend = M.max(0.01, ((i + (percent)) / (amt)) * 0.25 - ((1 / amt * 0.25)));
+			var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3], blend);
 
 			var p1 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
 			var p2 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
@@ -906,8 +921,9 @@ function loadLevel(number, resetStack = true) {
 
 	if (levelSolved[level] == 0) {
 		levelSolved[level] = 1;
-		saveGame();
 	}
+
+	saveGame();
 	
 	player = {x: 0, y: 0};
 	walls.length = 0;
@@ -1091,7 +1107,7 @@ function wrapCoords(newX, newY) {
 	}
 
 	var wrappedOnX = wrapX();
-	/*var wrappedOnY =*/ wrapY();
+	var wrappedOnY = wrapY();
 	if (!wrappedOnX) { //QQQ Shouldn't this be the other way around?
 		wrapX();
 	}
@@ -1099,7 +1115,7 @@ function wrapCoords(newX, newY) {
 		wrapY();
 	}*/
 
-	return {x: newX, y: newY}
+	return {x: newX, y: newY, wrapped: (wrappedOnX || wrappedOnY)}
 }
 
 function hasThing(array, x, y) { //Returns INDEX, not OBJECT!
@@ -1182,12 +1198,16 @@ function MovePlayer(horDelta, verDelta) {
 		var target = wrapCoords(player.x + horDelta, player.y + verDelta);
 		var targetX = target.x;
 		var targetY = target.y;
+		//var wrapped = target.wrapped;
 
 		let foundBox = hasBox(targetX, targetY);
 		if (foundBox !== null) {
 			var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
 			let boxTargetX = boxTarget.x;
 			let boxTargetY = boxTarget.y;
+			/*if (!wrapped) {
+				var wrapped = boxTarget.wrapped;
+			}*/
 
 			if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null && hasRubble(boxTargetX, boxTargetY) === null) {
 				boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
@@ -1223,7 +1243,7 @@ function MovePlayer(horDelta, verDelta) {
 		timeSinceLastAction = 0;
 
 		prevHorDelta = horDelta;
-		prevVerDelta = verDelta;
+		//prevVerDelta = verDelta;
 
 		freshState = false;
 
@@ -1234,9 +1254,13 @@ function MovePlayer(horDelta, verDelta) {
 
 		if (autoScrollX) {
 			ShiftX(autoScrollX);
-		} else if (autoScrollY) {
+		} /*else if (autoScrollY) {
 			ShiftY(autoScrollY);
-		}
+			if (wrapped) {
+				prevVerDelta -= autoScrollY;
+				console.log("Shifted verDelta");
+			}
+		}*/
 
 		//Check if won
 		var hasWon = true;
@@ -1285,9 +1309,9 @@ function MovePlayer(horDelta, verDelta) {
 			levelOffsetX -= horDelta;
 			prevLevelOffsetX = -horDelta;
 			timeSinceLastAction = 0;
-			if (levelOffsetX >= gridWidth * 0.5) {
+			if (levelOffsetX > gridWidth * 0.5) {
 				levelOffsetX -= gridWidth;
-			} else if (levelOffsetX <= -gridWidth * 0.5) {
+			} else if (levelOffsetX < -gridWidth * 0.5) {
 				levelOffsetX += gridWidth;
 			}
 		} else {
@@ -1371,6 +1395,9 @@ function saveGame() {
 	ls.setItem("enf-a", audioEnabled);
 	ls.setItem("enf-r", reduceMotion);
 	ls.setItem("enf-v", 1);
+	if (targetLevel != 0) {
+		ls.setItem("enf-t", targetLevel);
+	}
 }
 
 function loadGame() {
@@ -1392,6 +1419,11 @@ function loadGame() {
 	var loadedValue = parseInt(ls.getItem("enf-c", 0));
 	if (loadedValue >= 0 && loadedValue < colors.length) {
 		colorTheme = loadedValue;
+	}
+
+	var loadedValue = parseInt(ls.getItem("enf-t", 0));
+	if (loadedValue >= 0 && loadedValue < levels.length) {
+		targetLevel = loadedValue;
 	}
 
 	var loadedValue = ls.getItem("enf-a");
