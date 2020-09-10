@@ -1,6 +1,6 @@
 var levels = [];
 levels.push([
-	{gates: [3, 1, 3, 6, 11, 14], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
+	{gates: [6, 1, 3, 6, 11, 14, 14], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
 	"##########",
 	"gp.1g.111.g",
 	"##########",
@@ -8,7 +8,7 @@ levels.push([
 	"##########",
 	".333.3333.g",
 	"##########",
-	"4.4.4.4g4#"
+	"4.4.4.4g4g"
 ]);
 levels.push([
 	{nr: 100, name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
@@ -200,3 +200,8 @@ levels.push([
 	"##..######",
 	"##..######"
 ]);
+levels.push([
+	{nr: 500, name: "Test"},
+	"p#",
+	"|t"
+])

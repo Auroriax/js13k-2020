@@ -462,8 +462,8 @@ function gameLoop() {
 			var screenHeightRatio = M.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
 
 			//Add a little safety padding in case the level wrapping is offset
-			if (levelOffsetX != 0) {screenWidthRatio += 1}
-			if (levelOffsetY != 0) {screenHeightRatio += 1}
+			if (levelOffsetX != 0) {screenWidthRatio += 2}
+			if (levelOffsetY != 0) {screenHeightRatio += 2}
 
 			var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(M.min(timeSinceLastAction / timeToCompleteTween, 1)));
 			var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(M.min(timeSinceLastAction / timeToCompleteTween, 1)));
