@@ -271,6 +271,7 @@ function gameLoop() {
 									colorTheme = 0;
 								}
 								dirtyRender = true;
+								wroteFavicon = false;
 								audio(2, true);
 							}
 							saveGame();
@@ -282,6 +283,22 @@ function gameLoop() {
 					}
 				}
 			}
+		}
+
+		if (favicon != null && !wroteFavicon) {
+			const faviconCanvas = document.createElement("canvas");
+			faviconCanvas.width = 64;
+			faviconCanvas.height = 64;
+			const faviconCtx = faviconCanvas.getContext("2d");
+			const roughFavicon = rough.canvas(faviconCanvas);
+
+			faviconCtx.fillStyle = colors[colorTheme][1];
+			faviconCtx.fillRect(0,0,canvas.width, canvas.height);
+			roughFavicon.rectangle(8, 8, 48, 48, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, bowing: 2, seed: roughSeed});
+
+			favicon.href = faviconCanvas.toDataURL('image/png');
+			wroteFavicon = true;
+			//console.log("Set favicon");
 		}
 
 		//Rendering
@@ -401,12 +418,6 @@ function gameLoop() {
 				localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});*/
 		}
 
-		if (favicon != null && !wroteFavicon) {
-			favicon.href = targetCanvas.toDataURL('image/png');
-			wroteFavicon = true;
-			//console.log("Set favicon");
-		}
-
 		var shaking = (camShakeX != 0 || camShakeY != 0);
 		var reduceCamShake = 2;
 		if (camShakeX > 0) {camShakeX = M.max(0, camShakeX - reduceCamShake)}
@@ -492,7 +503,9 @@ function gameLoop() {
 				}
 			}
 
-			drawRepeat(pathCanvas);
+			if (!reduceMotion) {
+				drawRepeat(pathCanvas);
+			}
 			drawRepeat(levelCanvas);
 
 			//ctx.globalAlpha = alph;
@@ -770,6 +783,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 		}
 		levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
 	}
+	levelCtx.globalAlpha = 1;
 
 	//Player
 	function drawPlayer(offsetX = 0, offsetY = 0) {
@@ -805,6 +819,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 	levelCtx.textAlign = "center";
 	levelCtx.textBaseline = "middle";
 	levelCtx.fillStyle = colors[colorTheme][2];
+	levelCtx.globalAlpha = 1;
 	for(let i = 0; i != levelNodes.length; i++) {
 		//drawStroked()
 		levelCtx.font = M.round(0.5 * localScale) + S;
@@ -1060,7 +1075,7 @@ function loadLevel(number, resetStack = true) {
 					levelsPlaced[0]++;
 					break;
 				case "2":
-					if (amountOfLevelsSolved < metadata.gates[1]) {
+					if (amountOfLevelsSolved < metadata.gates[2]) {
 						targets.push({x: x, y: y});
 						break;
 					}
@@ -1070,7 +1085,7 @@ function loadLevel(number, resetStack = true) {
 					levelsPlaced[1]++;
 					break;
 				case "3":
-					if (amountOfLevelsSolved < metadata.gates[2]) {
+					if (amountOfLevelsSolved < metadata.gates[3]) {
 						targets.push({x: x, y: y});
 						break;
 					}
@@ -1080,7 +1095,7 @@ function loadLevel(number, resetStack = true) {
 					levelsPlaced[2]++;
 					break;
 				case "4":
-					if (amountOfLevelsSolved < metadata.gates[3]) {
+					if (amountOfLevelsSolved < metadata.gates[4]) {
 						targets.push({x: x, y: y});
 						break;
 					}

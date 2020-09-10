@@ -1,8 +1,8 @@
 var levels = [];
 levels.push([
-	{gates: [1, 3, 6, 11, 14], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
+	{gates: [3, 1, 3, 6, 11, 14], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
 	"##########",
-	"p1g.1.1.1.g",
+	"gp.1g.111.g",
 	"##########",
 	"2.2.2.2.2.g",
 	"##########",
@@ -128,7 +128,7 @@ levels.push([
 	"##.#.###.#.#",
 ]);
 levels.push([
-	{nr: 305, name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+	{nr: 305, name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDDrrurrRllU (48)
 	"",
 	".t",
 	"#|#",
