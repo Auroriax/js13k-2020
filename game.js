@@ -380,7 +380,7 @@ function gameLoop() {
 
 			//Render wall
 			roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
-				localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+				localScale, localScale, {stroke: "none", fill: colors[colorTheme][2], /*fillWeight: 3,*/ strokeWidth: 1, seed: roughSeed});
 
 			//Render box
 			var size = 0.8;
@@ -393,9 +393,12 @@ function gameLoop() {
 			localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", fillWeight: localScale / 70, strokeWidth: 2, seed: roughSeed});
 
 			//Render target
-			var size = 1.1;
+			var size = 0.9;
+			roughTarget.rectangle(targetMargin * 0.5 + (1-size) * 0.5 * localScale, targetMargin * 0.5 + (1-size) * 0.5 * localScale, 
+			localScale * size, localScale * size, {fillStyle: "solid", fill: colors[colorTheme][1], stroke: colors[colorTheme][2], bowing: 4, strokeWidth: 1, fillWeight: 0.25, seed: roughSeed});
+			/*var size = 1.1;
 			roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
-				localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+				localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});*/
 		}
 
 		if (favicon != null && !wroteFavicon) {
@@ -732,8 +735,15 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 	//Target
 	for(let i = 0; i != targets.length; i++) {
+		if (hasBox(targets[i].x, targets[i].y)) {
+			levelCtx.globalAlpha = 1;
+		} else {
+			levelCtx.globalAlpha = 0.7;
+		}
 		levelCtx.drawImage(targetCanvas, PosX(targets[i].x) - targetMargin * 0.5, PosY(targets[i].y) - targetMargin * 0.5);
 	}
+
+	levelCtx.globalAlpha = 1;
 
 	//Gate image
 	for(let i = 0; i != gates.length; i++) {
@@ -753,6 +763,11 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 	//LevelNode image
 	for(let i = 0; i != levelNodes.length; i++) {
+		if (player.x == levelNodes[i].x && player.y == levelNodes[i].y) {
+			levelCtx.globalAlpha = 1;
+		} else {
+			levelCtx.globalAlpha = 0.7;
+		}
 		levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
 	}
 
@@ -800,7 +815,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75);
 		} else if (levelSolved[i+1] == 0) {
 			levelCtx.font = "bold " + M.round(0.25 * localScale)+ S;
-			levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.8);
+			levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.775);
 		}
 	}
 
@@ -891,6 +906,7 @@ function input(event) {
 	}
 
 	var key = event.key;
+	var code = event.code;
 
 	dirtyRender = true;
 
@@ -901,15 +917,21 @@ function input(event) {
 		} else {
 			audio(0, true);
 		}
+		horizontalInput.reset();
+		verticalInput.reset();
+		undoInput.reset();
 		timeSinceMenuToggled = 0;
 		menuSelection = 0;
 	}
 
 	if (!menuOpened) {
-		if (key == "r" || key == "R") {
+		if (code == "KeyR") {
 			if (!freshState) {
 				audio(6);
 				undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY});
+				horizontalInput.reset();
+				verticalInput.reset();
+				undoInput.reset();
 				loadLevel(level, false);
 			}
 			return;

@@ -152,9 +152,14 @@ levels.push([
 ]);
 levels.push([
 	{nr: 400, name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
-	"rrr#..r#",
-	".pb...r#",
-	"#t######"
+	"#tr.r.",
+	"#rrrr.",
+	"#pb...",
+	"#rrrrr",
+	"#r.-.r",
+	"#r#r#r",
+	"#r...r",
+	"#r.r.r"
 ]);
 levels.push([
 	{nr: 401, name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
