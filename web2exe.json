@@ -1,0 +1,19 @@
+{
+    "webexe_settings": {
+        "blacklist": ".git\n.gitignore\nbuilds\nREADME.md\noutput",
+        "custom_script": "",
+        "download_dir": "",
+        "export_dir": "output",
+        "force_download": false,
+        "linux-x32": false,
+        "linux-x64": false,
+        "nw_compression_level": 0,
+        "nw_version": "0.48.1",
+        "output_pattern": "",
+        "sdk_build": false,
+        "uncompressed_folder": false,
+        "whitelist": "",
+        "windows-x32": false,
+        "windows-x64": true
+    }
+}

@@ -202,6 +202,7 @@ levels.push([
 ]);
 levels.push([
 	{nr: 500, name: "Test"},
-	"p#",
-	"|t"
+	"..#",
+	"...",
+	"p.."
 ])
