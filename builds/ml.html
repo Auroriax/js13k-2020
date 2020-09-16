@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
+    <style>
+        body {
+            background-color: #ccc;
+        }
+    </style>
 </head>
 ManualLinter - Tom Hermans<br>
 Manual Linter brings all your assets (html, css, and js) into one html file, and throws a few optimizations in the mix as well. Enjoy your smaller file size!
@@ -18,7 +23,9 @@ Manual Linter brings all your assets (html, css, and js) into one html file, and
 </div>
 <br>
 <div>
-    Javascript (only up to three files at the moment, sorry! The minifier is also pretty strict at the moment, turn it off if you're having issues with it.)<br>
+    Javascript (only up a few files at the moment! The minifier is also pretty strict, turn it off if you're having issues with it.)
+    <input type="checkbox" id="js_minify" name="js_minify">
+    <label for="js_minify"> Minify</label><br>
     <textarea id="js_name_1" rows="1" cols="200" placeholder="Filename of core JS file here">tomato.js</textarea><br>
     <textarea id="js_1" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div><br>
@@ -27,20 +34,22 @@ Manual Linter brings all your assets (html, css, and js) into one html file, and
     <textarea id="js_2" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div><br>
 <div>
-    <textarea id="js_name_3" rows="1" cols="200" placeholder="Filename of yet another JS file here">levels.js</textarea> <br>
+    <textarea id="js_name_3" rows="1" cols="200" placeholder="Filename of yet another JS file here">zzfx.js</textarea> <br>
     <textarea id="js_3" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div><br>
 <div>
-    <textarea id="js_name_4" rows="1" cols="200" placeholder="Filename of a final JS file here">game.js</textarea> <br>
+    <textarea id="js_name_4" rows="1" cols="200" placeholder="Filename of a final JS file here">levels.js</textarea> <br>
     <textarea id="js_4" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div>
 <div>
-    <textarea id="js_name_5" rows="1" cols="200" placeholder="Filename of a final JS file here">zzfx.js</textarea> <br>
+    <textarea id="js_name_5" rows="1" cols="200" placeholder="Filename of a final FINAL JS file here">game.js</textarea> <br>
     <textarea id="js_5" rows="5" cols="200" placeholder="Paste JS here"></textarea>
 </div>
 <button onclick="lint()" type="button"><b>Minify & lint all</b></button><br> <br>
 Output <div id="stats"></div><br>
 <textarea id="output" rows="5" cols="200" placeholder="All your code inside one HTML file"></textarea>
+<br>Just the Javascript code (for further minification):<br>
+<textarea id="jsoutput" rows="5" cols="200" placeholder="Pure JS output to take through a minifier"></textarea>
 
 <script>
 
@@ -62,7 +71,9 @@ function HtmlLoaded() {
     js_4 = document.getElementById("js_4");
     js_name_5 = document.getElementById("js_name_5");
     js_5 = document.getElementById("js_5");
+    js_minify = document.getElementById("js_minify");
     output = document.getElementById("output");
+    jsoutput = document.getElementById("jsoutput");
     stats = document.getElementById("stats");
 
     inited = true;
@@ -83,13 +94,14 @@ function lint() {
     var js5 = stripjs(js_5.value);
     
     htmlmin = htmlmin.replace('<link rel="stylesheet" href="'+css_name.value+'">',"\n<style>"+cssmin+"</style>\n");
-    htmlmin = htmlmin.replace('<script src="'+js_name_1.value+'"></script>',"\n<script>"+js1+"</script>\n");
-    htmlmin = htmlmin.replace('<script src="'+js_name_2.value+'"></script>',"\n<script>"+js2+"</script>\n");
-    htmlmin = htmlmin.replace('<script src="'+js_name_3.value+'"></script>',"\n<script>"+js3+"</script>\n");
-    htmlmin = htmlmin.replace('<script src="'+js_name_4.value+'"></script>',"\n<script>"+js4+"</script>\n");
-    htmlmin = htmlmin.replace('<script src="'+js_name_5.value+'"></script>',"\n<script>"+js5+"</script>\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_1.value+'"></script>', "\n<script>"+js1+"\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_2.value+'"></script>', js2+"\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_3.value+'"></script>', js3+"\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_4.value+'"></script>', js4+"\n");
+    htmlmin = htmlmin.replace('<script src="'+js_name_5.value+'"></script>', js5+"<\/script>\n");
     
-    output.value = htmlmin
+    output.value = htmlmin;
+    jsoutput.value = js1 + "\n" + js2 + "\n" + js3 + "\n" + js4 + "\n" + js5;
 
     percent = (((chars - htmlmin.length) / chars) * 100).toFixed(2);
     stats.innerHTML = "Went from "+chars.toString()+" characters down to "+htmlmin.length.toString()+", a save of "+percent.toString()+"%";
@@ -117,12 +129,33 @@ function stripcss(string) {
 }
 
 function stripjs(string) {
+
+    if (!js_minify.checked) {
+        return string;
+    }
+
     var temp = string;
  
     temp = temp.replace(/\/\*[\s\S]*?\*\/|([^:]|^)\/\/.*$/gm, '$1'); //Remove comments
     temp = temp.replace(/(\r\n|\n|\r)/gm, " "); //Remove newlines
+
     temp = temp.replace(/  /g, ''); //Remove spaces
     temp = temp.replace(/\t/g, ''); //Remove tabs
+    temp = temp.replace(/ = /g,"=") //Remove spaces
+    temp = temp.replace(/ { /g,"{") //Remove spaces
+    temp = temp.replace(/ } /g,"}") //Remove spaces
+    temp = temp.replace(/{ /g,"{") //Remove spaces
+    temp = temp.replace(/} /g,"}") //Remove spaces
+    temp = temp.replace(/ {/g,"{") //Remove spaces
+    temp = temp.replace(/ }/g,"}") //Remove spaces
+    temp = temp.replace(/; /g,";") //Remove spaces
+    //temp = temp.replace(/: /g,":") //Remove spaces
+    temp = temp.replace(/if \(/g,"if(") //Remove spaces
+
+    temp = temp.replace(/ == /g,"==") //Remove spaces
+    temp = temp.replace(/ != /g,"!=") //Remove spaces
+    temp = temp.replace(/ && /g,"&&") //Remove spaces
+    temp = temp.replace(/ \|\| /g,"||") //Remove spaces
 
     return(temp);
 }

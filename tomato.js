@@ -206,6 +206,17 @@ class InputHandler {
 
 		//console.log("State: " + this.state + " Fired: " + this.timeSinceLastRefire);
 	}
+
+	reset() {
+		this.posKeysHeld = [];
+		this.negKeysHeld = [];
+		this.state = pressedState.IDLE;
+		this.fired = false;
+		this.delta = 0;
+		this.heldTime = 0;
+		this.timesFired = 0;
+		this.timeSinceLastRefire = 0;
+	}
 }
 
 ///MISC
@@ -230,4 +241,4 @@ function SpliceUnique(array, EntryToSplice) {
 	return array;
 }
 
-console.log("🍅 Tomato loaded successfully! Version 0.1.0");
+//console.log("🍅 Tomato loaded successfully! Version 0.1.0");

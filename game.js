@@ -1,3 +1,36 @@
+const obj = {
+	EMPTY: ".",
+	PLAYER: "p",
+	WALL: "#",
+	BOX: "b",
+	SHIFTBOX: "+",
+	SHIFTBOXHOR: "-",
+	SHIFTBOXVER: "|",
+	TARGET: "t",
+	LEVELONE: "1",
+	LEVELTWO: "2",
+	LEVELTHREE: "3",
+	LEVELFOUR: "4",
+	RUBBLE: "r",
+	GATE: "g",
+}; //all lowercase if applicable!
+
+const sfx = {
+	SELECT: 0,
+	BUMP: 1,
+	WALK: 2,
+	SHIFT: 3,
+	VICTORY: 4,
+	UNDO: 5,
+	RESTART: 6,
+	MENU: 7,
+	BACK: 8,
+	GAMEEND: 9,
+	PUSH: 10
+}
+
+const fontDefault = "px sans-serif";
+
 var scale = 70;
 var roughSeed = 1;
 
@@ -10,6 +43,10 @@ const roughCanvas = rough.canvas(canvas);
 const levelCanvas = document.createElement("canvas");
 const levelCtx = levelCanvas.getContext("2d");
 const roughLevel = rough.canvas(levelCanvas);
+
+const pathCanvas = document.createElement("canvas");
+const pathCtx = pathCanvas.getContext("2d");
+const roughPath = rough.canvas(pathCanvas);
 
 const wallCanvas = document.createElement("canvas");
 const wallCtx = wallCanvas.getContext("2d");
@@ -40,29 +77,8 @@ let undoStack = [];
 var camShakeX = 0;
 var camShakeY = 0;
 
-//var mousePos = new Vector2(0,0);
-
 var gameName = "Edge Not Found ";
 var subTitle = "Press any key";
-
-const obj = {
-	EMPTY: ".",
-	PLAYER: "p",
-	WALL: "#",
-	BOX: "b",
-	SHIFTBOX: "+",
-	SHIFTBOXHOR: "-",
-	SHIFTBOXVER: "|",
-	TARGET: "t",
-	LEVELONE: "1",
-	LEVELTWO: "2",
-	LEVELTHREE: "3",
-	LEVELFOUR: "4",
-	RUBBLE: "r",
-	GATE: "g",
-
-	//SHIFTBOXANDTARGET: "x"
-}; //all lowercase if applicable!
 
 var levelName = "";
 var levelOffsetX = 0;
@@ -83,14 +99,10 @@ onkeydown = function(e) {
 	input(e);
 };
 
-/*canvas.addEventListener('mousemove', function(evt) {
-	var rect = canvas.getBoundingClientRect();
-	mousePos = new Vector2(evt.clientX - rect.left, evt.clientY - rect.top);
-	//console.log(mousePos);
-}, false);*/
-
-window.onbeforeunload = function(e) {
-	return "Quit?";
+window.onbeforeunload = function() {
+	if (level != 0) {
+		return "Quit?";
+	}
 };
 
 var favicon = null;
@@ -105,6 +117,8 @@ var level = 0;
 var gridHeight = levels[level].length;
 var gridWidth = levels[level][0].length;
 
+setCanvasScales(scale);
+
 var player = {x: 0, y: 0};
 //var playerTarget 
 var walls = [];
@@ -118,18 +132,19 @@ var steps = "";
 var prevHorDelta = 0;
 var prevVerDelta = 0;
 
-var timeSinceLastAction = 0; //in s
-var timeToCompleteTween = 0.1; //in s
+//Set up timers, these are all in seconds
+var timeSinceLastAction = 0;
+var timeToCompleteTween = 0.1;
 
-var timeToUpdateRenders = (1/3); //in s
-var timeSinceUpdatedRenders = timeToUpdateRenders; //in s
+var timeToUpdateRenders = (1/3);
+var timeSinceUpdatedRenders = timeToUpdateRenders;
 
-var timeUntilLevelEnd = 4; //in s;
+var timeUntilLevelEnd = 4;
 var timeUntilLevelSelected = 1;
 var timeSinceLevelWon = timeUntilLevelEnd;
 
 var timeSinceLevelStart = 0;
-var timeToLoadLevel = 1; //in s;
+var timeToLoadLevel = 1;
 
 var timeUntilChangableTheme = 0.2;
 var timeSinceLastThemeChange = 0;
@@ -152,21 +167,21 @@ var horizontalInput = new InputHandler(["KeyD", "ArrowRight"], ["KeyA", "ArrowLe
 var undoInput = new InputHandler(["KeyZ", "Backspace"], [], timing, 0.1, 0.2);
 var confirmInput = new InputHandler(["KeyX", "Space", "Enter"], [], timing, 0.1, 0.2);
 
-var reduceMotion = false;
-var colors = [];
-colors[0] = ["Sketchbook", "#ffffff", "#000000", "#808080", "#ff0000"]; //name, bg, main, in-between, contrast
+var colors = []; //Note that all colors must be defined as a hex with 6 numbers for color blending to work.
+colors[0] = ["Sketchbook", "#ffffff", "#000000", "#808080", "#ff0000"]; //name, bg, main, in-between, trail, shiftbox line
 colors[1] = ["Scratchpad", "#202020", "#ffffff", "#808080", "#ffd700"];
 colors[2] = ["Golden Ticket", "#303030", "#b29700", "#8e7900", "#efe7d6"];
 colors[3] = ["Ikaniko", "#1E2A26", "#7CA49B", "#267B75", "#C8EEE5"];
 colors[4] = ["BackFlipped", "#223e32", "#b3dd52", "#04bf00", "#A7C06D"];
 var colorTheme = 0;
 var audioEnabled = true;
+var reduceMotion = false;
 
 var freshState = true; //If the level was either just loaded or just reset
 var victory = false; //If the level is finished, no input is accepted until the next level loads
 var targetLevel = 0;
 
-var dirtyRender = true; //Change when theme was changed.
+var dirtyRender = true; //Mark as true when theme changes and on some other rare occurences.
 var previousScale = 0;
 
 window.onresize = function() {
@@ -196,8 +211,6 @@ function gameLoop() {
 		verticalInput.update();
 		undoInput.update();
 		confirmInput.update();
-		
-		//console.log(horizontalInput.delta);
 
 		//Input
 		if (!victory && !titleScreen) {
@@ -209,7 +222,7 @@ function gameLoop() {
 					MovePlayer(horizontalInput.delta, 0);
 				}
 				if (undoInput.fired == true && undoStack.length != 0) {
-					audio("undo");
+					audio(sfx.UNDO);
 
 					var stateToRestore = undoStack.pop();
 
@@ -232,7 +245,7 @@ function gameLoop() {
 
 					timeSinceLastAction = timeToCompleteTween;
 
-					console.warn("Popped the undo stack, remaining entries:", undoStack.length);
+					//console.warn("Popped the undo stack, remaining entries:", undoStack.length);
 
 					dirtyRender = true;
 				}
@@ -243,7 +256,7 @@ function gameLoop() {
 							targetLevel = levelNodes[lvl].target;
 							victory = true;
 							timeSinceLevelWon = 0;
-							audio("select");
+							audio(sfx.SELECT);
 						}
 					}
 				}
@@ -263,18 +276,18 @@ function gameLoop() {
 					switch(menuSelection) {
 						case 0: 
 							menuOpened = !menuOpened;
-							audio("select", true);
+							audio(sfx.SELECT, true);
 							break;
 						case 1:
 							audioEnabled = !audioEnabled;
 							if (audioEnabled) {
-								audio("menu", true);
+								audio(sfx.MENU, true);
 							}
 							saveGame();
 							break;
 						case 2:
 							reduceMotion = !reduceMotion;
-							audio("walk", true);
+							audio(sfx.WALK, true);
 							saveGame();
 							break;
 						case 3:
@@ -285,17 +298,33 @@ function gameLoop() {
 									colorTheme = 0;
 								}
 								dirtyRender = true;
-								audio("walk", true);
+								wroteFavicon = false;
+								audio(sfx.WALK, true);
 							}
 							saveGame();
 							break;
 						case 4:
 							loadLevel(0);
-							audio("back", true);
+							audio(sfx.BACK, true);
 							menuOpened = !menuOpened;
 					}
 				}
 			}
+		}
+
+		if (favicon != null && !wroteFavicon) {
+			const faviconCanvas = document.createElement("canvas");
+			faviconCanvas.width = 64;
+			faviconCanvas.height = 64;
+			const faviconCtx = faviconCanvas.getContext("2d");
+			const roughFavicon = rough.canvas(faviconCanvas);
+
+			faviconCtx.fillStyle = colors[colorTheme][1];
+			faviconCtx.fillRect(0,0,canvas.width, canvas.height);
+			roughFavicon.rectangle(8, 8, 48, 48, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 2, bowing: 2, seed: roughSeed});
+
+			favicon.href = faviconCanvas.toDataURL('image/png');
+			wroteFavicon = true;
 		}
 
 		//Rendering
@@ -312,10 +341,13 @@ function gameLoop() {
 			timeSinceLevelStart = timeToLoadLevel * .5;
 		}
 
+		var zoom = 1;
 		if (canvas.width < 700 || canvas.height < 700) {
 			scale = 40;
+			zoom = 0.6;
 		} else if (canvas.width < 1000 || canvas.height < 900) {
 			scale = 55;
+			zoom = 0.8;
 		} else {
 			scale = 70;
 		}
@@ -324,13 +356,13 @@ function gameLoop() {
 		var localScale = scale;
 		if (timeSinceLevelStart < timeToLoadLevel) {
 			alph = timeSinceLevelStart / timeToLoadLevel;
-			localScale = (scale + 20) - 20 * EaseInOut(timeSinceLevelStart / timeToLoadLevel);
+			localScale = (scale + 20 * zoom) - 20 * zoom * EaseInOut(timeSinceLevelStart / timeToLoadLevel);
 		} else if (timeSinceLevelWon < timeUntilLevelEnd && level != 0) {
 			alph = 1 - (timeSinceLevelWon / timeUntilLevelEnd);
-			localScale = (scale - 50) + 50 * (1-EaseInOut(timeSinceLevelWon / timeUntilLevelEnd));
+			localScale = (scale - 50 * zoom) + 50 * zoom * (1-EaseInOut(timeSinceLevelWon / timeUntilLevelEnd));
 		} else if (timeSinceLevelWon < timeUntilLevelSelected && level == 0) {
 			alph = 1 - (timeSinceLevelWon / timeUntilLevelSelected);
-			localScale = (scale) - 20 * (EaseInOut(timeSinceLevelWon / timeUntilLevelSelected));
+			localScale = (scale) - 20 * zoom * (EaseInOut(timeSinceLevelWon / timeUntilLevelSelected));
 		} else if (((timeSinceLevelWon >= timeUntilLevelEnd && level != 0) || (timeSinceLevelWon >= timeUntilLevelSelected && level == 0)) && victory) {
 			if (level == 0) {
 				loadLevel(targetLevel);
@@ -339,11 +371,15 @@ function gameLoop() {
 					gameName = "Victory! ";
 					subTitle = "Thank you for playing!";
 					titleScreen = true;
-					audio("gameend");
+					audio(sfx.GAMEEND);
 				}
 				loadLevel(0);
 			}
 			alph = 0;
+		}
+
+		if (localScale < 0) {
+			localScale = 0
 		}
 
 		if (reduceMotion) {
@@ -354,8 +390,6 @@ function gameLoop() {
 		var horWidth = gridWidth * localScale;
 		var rerendered = false;
 
-		//console.log("Triggers every frame");
-
 		//Render
 		if ((!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) || localScale != previousScale || dirtyRender) {
 			if (!reduceMotion && timeSinceUpdatedRenders >= timeToUpdateRenders) {
@@ -364,23 +398,9 @@ function gameLoop() {
 			}
 
 			rerendered = true;
-			dirtyRender = false;
 
 			if (localScale != previousScale) {
-				playerCanvas.width = localScale;
-				playerCanvas.height = localScale;
-
-				wallCanvas.width = localScale+wallMargin;
-				wallCanvas.height = localScale+wallMargin;
-
-				boxCanvas.width = localScale+boxMargin;
-				boxCanvas.height = localScale+boxMargin;
-
-				rubbleCanvas.width = localScale+rubbleMargin;
-				rubbleCanvas.height = localScale+rubbleMargin;
-
-				targetCanvas.width = localScale+targetMargin;
-				targetCanvas.height = localScale+targetMargin;
+				setCanvasScales(localScale);
 			} else {
 				PlayerCtx.clearRect(0,0, playerCanvas.width, playerCanvas.height);
 				PlayerCtx.beginPath();
@@ -405,7 +425,7 @@ function gameLoop() {
 
 			//Render wall
 			roughWall.rectangle(wallMargin * 0.5, wallMargin * 0.5, 
-				localScale, localScale, {stroke: colors[colorTheme][2], fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
+				localScale, localScale, {stroke: "none", fill: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
 
 			//Render box
 			var size = 0.8;
@@ -418,15 +438,9 @@ function gameLoop() {
 			localScale * size, localScale * size, {stroke: "none", fill: colors[colorTheme][2], fillStyle: "dots", fillWeight: localScale / 70, strokeWidth: 2, seed: roughSeed});
 
 			//Render target
-			var size = 1.1;
-			roughTarget.circle(localScale * 0.5 + targetMargin * 0.5, localScale * 0.5 + targetMargin * 0.5, 
-				localScale * size, {fillStyle: "zigzag", fill: colors[colorTheme][3], stroke: colors[colorTheme][2], strokeWidth: 1, seed: roughSeed});
-		}
-
-		if (favicon != null && !wroteFavicon) {
-			favicon.href = targetCanvas.toDataURL('image/png');
-			wroteFavicon = true;
-			//console.log("Set favicon");
+			var size = 0.9;
+			roughTarget.rectangle(targetMargin * 0.5 + (1-size) * 0.5 * localScale, targetMargin * 0.5 + (1-size) * 0.5 * localScale, 
+			localScale * size, localScale * size, {fillStyle: "solid", fill: colors[colorTheme][1], stroke: colors[colorTheme][2], bowing: 4, strokeWidth: 1, fillWeight: 0.25, seed: roughSeed});
 		}
 
 		var shaking = (camShakeX != 0 || camShakeY != 0);
@@ -443,10 +457,16 @@ function gameLoop() {
 			if (localScale != previousScale || dirtyRender) {
 				levelCanvas.width = horWidth+levelMargin;
 				levelCanvas.height = verHeight+levelMargin;
+				pathCanvas.width = horWidth+levelMargin;
+				pathCanvas.height = verHeight+levelMargin;
 			} else {
 				levelCtx.clearRect(0,0, levelCanvas.width, levelCanvas.height);
 				levelCtx.beginPath();
+				pathCtx.clearRect(0,0, pathCanvas.width, pathCanvas.height);
+				pathCtx.beginPath();
 			}
+			
+			dirtyRender = false;
 
 			drawLevel(0, 0, gridWidth, gridHeight, localScale);
 
@@ -454,8 +474,6 @@ function gameLoop() {
 		}
 
 		if (rerendered || titleScreen) {
-			//console.log("Triggers only when entire canvas is redrawn");
-
 			var shakeMultiplier = 1;
 			if (reduceMotion) {shakeMultiplier = 0}
 
@@ -467,8 +485,8 @@ function gameLoop() {
 			var screenHeightRatio = Math.ceil(((canvas.height - verHeight + clipOffset) / verHeight * 0.5));
 
 			//Add a little safety padding in case the level wrapping is offset
-			if (levelOffsetX != 0) {screenWidthRatio += 1}
-			if (levelOffsetY != 0) {screenHeightRatio += 1}
+			if (levelOffsetX != 0) {screenWidthRatio += 2}
+			if (levelOffsetY != 0) {screenHeightRatio += 2}
 
 			var tweenOffsetX = levelOffsetX - prevLevelOffsetX * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
 			var tweenOffsetY = levelOffsetY - prevLevelOffsetY * (1-EaseInOut(Math.min(timeSinceLastAction / timeToCompleteTween, 1)));
@@ -477,22 +495,42 @@ function gameLoop() {
 			ctx.fillStyle = colors[colorTheme][1];
 			ctx.fillRect(0,0,canvas.width, canvas.height);
 
-			for(let y = -screenHeightRatio; y <= screenHeightRatio; y++) {
-				for(let x = -screenWidthRatio; x <= screenWidthRatio; x++) {
-					if (x != 0 || y != 0) 
-					{
+			function drawRepeat(img) {
+				for(let y = 0; y <= screenHeightRatio; y++) {
+					for(let x = 0; x <= screenWidthRatio; x++) {
 						ctx.globalAlpha = Math.max(0, alph - Math.abs(y) * 0.1 - Math.abs(x * 0.1));
+
 						if (ctx.globalAlpha > 0) {
-							ctx.drawImage(levelCanvas, 
+							ctx.drawImage(img, 
 							cameraX + horWidth * x + tweenOffsetX * localScale * y,
 							cameraY + verHeight * y + tweenOffsetY * localScale * x);
+
+							if (x != 0 && y != 0) {
+							ctx.drawImage(img, 
+									cameraX + horWidth * (-x) + tweenOffsetX * localScale * (-y),
+									cameraY + verHeight * (-y) + tweenOffsetY * localScale * (-x));
+							}
+								
+							if (y != 0) {
+								ctx.drawImage(img, 
+									cameraX + horWidth * (x) + tweenOffsetX * localScale * (-y),
+									cameraY + verHeight * (-y) + tweenOffsetY * localScale * (x));
+							}
+							if (x != 0) {
+								ctx.drawImage(img, 
+									cameraX + horWidth * (-x) + tweenOffsetX * localScale * (y),
+									cameraY + verHeight * (y) + tweenOffsetY * localScale * (-x));
+							}
 						}
 					}
 				}
 			}
 
-			ctx.globalAlpha = alph;
-			ctx.drawImage(levelCanvas, Math.round(cameraX + camShakeX * shakeMultiplier), Math.round(cameraY + camShakeY * shakeMultiplier));
+			if (!reduceMotion) {
+				drawRepeat(pathCanvas);
+			}
+			drawRepeat(levelCanvas);
+
 			const borderOffset = 5;
 			roughCanvas.rectangle(Math.round(cameraX-borderOffset + camShakeX * 0.5 * shakeMultiplier), Math.round(cameraY-borderOffset + camShakeY * 0.5 * shakeMultiplier), 
 				horWidth + borderOffset + levelMargin, verHeight + borderOffset + levelMargin, {stroke: colors[colorTheme][2], seed: roughSeed});
@@ -510,20 +548,20 @@ function gameLoop() {
 			//Draw level name
 			if (!titleScreen) {
 				ctx.textAlign = "left";
-				ctx.font = "40px sans-serif";
+				ctx.font = (40 * zoom) + fontDefault;
 				ctx.globalAlpha = EaseInOut(timeSinceLevelNameChanged / timeToDisplayLevelName);
 				drawStroked(ctx, levelName, 40, canvas.height - 40);
 				ctx.globalAlpha = 1;
 			}
 
-			ctx.font = "22px sans-serif";
+			ctx.font = 22 + fontDefault;
 			ctx.fillStyle = colors[colorTheme][1];
 			ctx.textAlign = "center";
 			ctx.textBaseline = "middle";
 
 			//Draw title screen
 			if (titleScreen) {
-				ctx.font = Math.round(scale * 1.2) + "px sans-serif";
+				ctx.font = Math.round(scale * 1.2) + fontDefault;
 				ctx.textAlign = "left";
 				ctx.textBaseline = "center";
 				ctx.fillStyle = "black";
@@ -542,7 +580,7 @@ function gameLoop() {
 
 				drawStroked(ctx, txt,-startX * textWidth,canvas.height * .5);
 
-				ctx.font = Math.round(scale * 0.5) + "px sans-serif";
+				ctx.font = Math.round(scale * 0.5) + fontDefault;
 				ctx.textAlign = "center";
 				drawStroked(ctx, subTitle,canvas.width * .5,canvas.height * .6);
 			}
@@ -613,7 +651,7 @@ function gameLoop() {
 				if (level != 0) {
 					ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
 				} else {
-					ctx.font = "16px sans-serif";
+					ctx.font = 16 + fontDefault;
 					ctx.fillText("Game by Tom Hermans for js13k 2020", width * 0.5, textBase + textOffset * 3.8);
 					ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
 					ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
@@ -635,10 +673,10 @@ function gameLoop() {
 		const canvas = document.getElementById("canvas");
 		if (canvas) {
 			console.log("Size of the canvas:",{width: canvas.width, height: canvas.height});
-			ctx.font = "30px sans-serif";
+			ctx.font = "24px sans-serif";
 			ctx.fillStyle = "red";
-			ctx.textAlign = "left";
-			ctx.fillText("Whoops, the game crashed! See the console for more info.",50,50);
+			ctx.textAlign = "center";
+			ctx.fillText("Whoops, the game crashed! See the console for more info.",canvas.clientWidth/2,50);
 		}
 	}
 };
@@ -650,7 +688,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 	function drawWrapped(object, drawFunction) {
 		drawFunction(0,0);
 
-		//if (timeSinceLastAction >= timeToCompleteTween) {return;}
+		if (autoScrollX || autoScrollY) {return;}
 
 		if (object.x <= 0.5) {
 			var wrapY = ((object.y + levelOffsetY + gridHeight) % gridHeight) - object.y;
@@ -679,12 +717,12 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 		var last = steps.lastIndexOf(" ");
 		var tot = lnt - last;
 
-		var amt = Clamp(undoStack.length, 1, 9);
+		var amt = Clamp(undoStack.length, 1, 7);
 		amt = Math.min(amt, tot);
 		for(var i = 0; i < amt; i += 1) {
 			var index = undoStack.length - amt + i;
 
-			if (index < 0 || index > undoStack.length) {
+			if (index < 0 || index > undoStack.length || index > steps.length) {
 				break;
 			}
 
@@ -693,11 +731,12 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 				percent = timeSinceLastAction / timeToCompleteTween;
 			};
 
-			var blend = Math.max(0, ((i + (1-percent)) / amt) * 0.25);
-			var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3],blend);
+			var blend = Math.max(0.01, ((i + (percent)) / (amt)) * 0.25 - ((1 / amt * 0.25)));
+			var clr = blendColors(colors[colorTheme][1], colors[colorTheme][3], blend);
 
 			var p1 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
 			var p2 = {x: undoStack[index].player.x, y: undoStack[index].player.y};
+
 			switch (steps[index].toLowerCase()) {
 				case "u":
 					p1.y += 0.2;
@@ -714,7 +753,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			}
 
 			function drawLine(offsetX = 0, offsetY = 0) {
-				roughLevel.line(PosX(p1.x + .5)+offsetX, PosY(p1.y + .5) +offsetY, PosX(p2.x + .5) +offsetX, PosY(p2.y + .5) +offsetY, {strokeWidth: localScale * 0.4, stroke: clr, seed: roughSeed+i, roughness: 0.75});
+				roughPath.line(PosX(p1.x + .5)+offsetX, PosY(p1.y + .5) +offsetY, PosX(p2.x + .5) +offsetX, PosY(p2.y + .5) +offsetY, {strokeWidth: localScale * 0.4, stroke: clr, seed: roughSeed+i, roughness: 0.75});
 			}
 
 			drawWrapped(p1, drawLine);
@@ -723,14 +762,20 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 	//Rubble
 	for(let i = 0; i != rubble.length; i++) {
-		//var even = (walls[i].x + walls[i].y);
 		levelCtx.drawImage(rubbleCanvas, PosX(rubble[i].x) - rubbleMargin * 0.5, PosY(rubble[i].y) - rubbleMargin * 0.5);
 	}
 
 	//Target
 	for(let i = 0; i != targets.length; i++) {
+		if (hasBox(targets[i].x, targets[i].y)) {
+			levelCtx.globalAlpha = 1;
+		} else {
+			levelCtx.globalAlpha = 0.7;
+		}
 		levelCtx.drawImage(targetCanvas, PosX(targets[i].x) - targetMargin * 0.5, PosY(targets[i].y) - targetMargin * 0.5);
 	}
+
+	levelCtx.globalAlpha = 1;
 
 	//Gate image
 	for(let i = 0; i != gates.length; i++) {
@@ -750,8 +795,14 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 	//LevelNode image
 	for(let i = 0; i != levelNodes.length; i++) {
+		if (player.x == levelNodes[i].x && player.y == levelNodes[i].y) {
+			levelCtx.globalAlpha = 1;
+		} else {
+			levelCtx.globalAlpha = 0.7;
+		}
 		levelCtx.drawImage(targetCanvas, PosX(levelNodes[i].x) - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5);
 	}
+	levelCtx.globalAlpha = 1;
 
 	//Player
 	function drawPlayer(offsetX = 0, offsetY = 0) {
@@ -787,22 +838,23 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 	levelCtx.textAlign = "center";
 	levelCtx.textBaseline = "middle";
 	levelCtx.fillStyle = colors[colorTheme][2];
+	levelCtx.globalAlpha = 1;
 	for(let i = 0; i != levelNodes.length; i++) {
 		//drawStroked()
-		levelCtx.font = Math.round(0.5 * localScale)+"px sans-serif";
+		levelCtx.font = Math.round(0.5 * localScale) + fontDefault;
 		levelCtx.fillText(levels[levelNodes[i].target][0].nr.toString(), PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.5);
 		
 		if (levelSolved[i+1] == 2) {
-			levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
+			levelCtx.font = Math.round(0.4 * localScale)+ fontDefault;
 			levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75);
 		} else if (levelSolved[i+1] == 0) {
-			levelCtx.font = "bold " + Math.round(0.25 * localScale)+"px sans-serif";
-			levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.8);
+			levelCtx.font = "bold " + Math.round(0.25 * localScale)+ fontDefault;
+			levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.775);
 		}
 	}
 
 	//Gates text
-	levelCtx.font = Math.round(0.4 * localScale)+"px sans-serif";
+	levelCtx.font = Math.round(0.4 * localScale)+ fontDefault;
 	levelCtx.textAlign = "center";
 	levelCtx.textBaseline = "middle";
 	levelCtx.fillStyle = colors[colorTheme][2];
@@ -845,9 +897,8 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			var diffX = Math.round(current.x - source.x);
 			var diffY = Math.round(current.y - source.y);
 
-			//console.log("Before: x:"+diffX + "y: "+diffY)
 			if (diffX != 0 && diffY != 0) {
-				if (prevHorDelta != 0) { //Does not resolve correctly 100% of the time
+				if (prevHorDelta != 0) {
 					diffX -= Math.sign(diffX) * gridWidth;
 					diffY = 0;
 				} else {
@@ -859,8 +910,6 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			} else if (Math.abs(diffY) > 1) {
 				diffY -= Math.sign(diffY) * gridHeight;
 			}
-
-			//console.log("x: "+diffX + " y: "+diffY)
 
 			percent = EaseInOut(percent);
 
@@ -882,39 +931,46 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 function input(event) {
 	if (victory) {return;}
 	if (titleScreen) {
-		audio("select", true);
+		audio(sfx.SELECT, true);
 		titleScreen = false;
 		return;
 	}
 
 	var key = event.key;
+	var code = event.code;
 
 	dirtyRender = true;
 
 	if (key == "Escape" && timeSinceMenuToggled >= 0.1) {
 		menuOpened = !menuOpened;
 		if (menuOpened) {
-			audio("menu", true);
+			audio(sfx.MENU, true);
 		} else {
-			audio("select", true);
+			audio(sfx.SELECT, true);
 		}
+		horizontalInput.reset();
+		verticalInput.reset();
+		undoInput.reset();
 		timeSinceMenuToggled = 0;
 		menuSelection = 0;
 	}
 
 	if (!menuOpened) {
-		if (key == "r" || key == "R") {
+		if (code == "KeyR") {
 			if (!freshState) {
-				audio("restart");
+				audio(sfx.RESTART);
 				undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY});
+				horizontalInput.reset();
+				verticalInput.reset();
+				undoInput.reset();
 				loadLevel(level, false);
 			}
 			return;
 		} else if (event.shiftKey && key == "n" || key == "N") {
-			loadLevel(Math.min(level + 1, levels.length-1 )); //QQQ
+			loadLevel(Math.min(level + 1, levels.length-1 ));
 			return;
 		} else if (event.shiftKey && key == "b" || key == "B") {
-			loadLevel(Math.max(level - 1, 0 )); //QQQ
+			loadLevel(Math.max(level - 1, 0 ));
 			return;
 		}
 	}
@@ -928,8 +984,11 @@ function loadLevel(number, resetStack = true) {
 
 	if (levelSolved[level] == 0) {
 		levelSolved[level] = 1;
-		saveGame();
 	}
+
+	saveGame();
+
+	dirtyRender = true;
 	
 	player = {x: 0, y: 0};
 	walls.length = 0;
@@ -979,7 +1038,6 @@ function loadLevel(number, resetStack = true) {
 	var placedPlayer = false;
 	var levelsPlaced = null;
 	if (metadata.levelSpread) {
-		//console.log(metadata.levelSpread);
 		var levelsPlaced = metadata.levelSpread.slice();
 	}
 	var gatesPlaced = 0;
@@ -995,7 +1053,7 @@ function loadLevel(number, resetStack = true) {
 	}
 
 	gridHeight = levelToLoad.length;
-	gridWidth = 0; //levelToLoad[0].length;
+	gridWidth = 0;
 
 	for(let y = 0; y < gridHeight; y++) {
 		gridWidth = Math.max(gridWidth, levelToLoad[y].length);
@@ -1022,46 +1080,38 @@ function loadLevel(number, resetStack = true) {
 				case obj.SHIFTBOX:
 					boxes.push({x: x, y: y, shift: 3});
 					break;
-				/*case obj.SHIFTBOXANDTARGET:
-					boxes.push({x: x, y: y, shift: 3});
-					targets.push({x: x, y: y});
-					break;*/
 				case obj.TARGET:
 					targets.push({x: x, y: y});
 					break;
 				case obj.LEVELONE:
 					levelNodes.push({x: x, y: y, target: levelsPlaced[0]});
-					//console.log("Placing level "+levelsPlaced[0])
 					checkPlayer(x, y, levelsPlaced[0]);
 					levelsPlaced[0]++;
 					break;
 				case obj.LEVELTWO:
-					if (amountOfLevelsSolved < metadata.gates[1]) {
-						targets.push({x: x, y: y});
-						break;
-					}
-					levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
-					//console.log("Placing level "+levelsPlaced[1])
-					checkPlayer(x, y, levelsPlaced[1]);
-					levelsPlaced[1]++;
-					break;
-				case obj.LEVELTHREE:
 					if (amountOfLevelsSolved < metadata.gates[2]) {
 						targets.push({x: x, y: y});
 						break;
 					}
-					levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
-					//console.log("Placing level "+levelsPlaced[2])
-					checkPlayer(x, y, levelsPlaced[2]);
-					levelsPlaced[2]++;
+					levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
+					checkPlayer(x, y, levelsPlaced[1]);
+					levelsPlaced[1]++;
 					break;
-				case obj.LEVELFOUR:
+				case obj.LEVELTHREE:
 					if (amountOfLevelsSolved < metadata.gates[3]) {
 						targets.push({x: x, y: y});
 						break;
 					}
+					levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
+					checkPlayer(x, y, levelsPlaced[2]);
+					levelsPlaced[2]++;
+					break;
+				case obj.LEVELFOUR:
+					if (amountOfLevelsSolved < metadata.gates[4]) {
+						targets.push({x: x, y: y});
+						break;
+					}
 					levelNodes.push({x: x, y: y, target: levelsPlaced[3]});
-					//console.log("Placing level "+levelsPlaced[3])
 					checkPlayer(x, y, levelsPlaced[3]);
 					levelsPlaced[3]++;
 					break;
@@ -1090,12 +1140,10 @@ function wrapCoords(newX, newY) {
 		if (newX >= gridWidth) {
 			newX -= gridWidth;
 			newY -= levelOffsetY;
-			//console.log("X-");
 			return true;
 		} else if (newX < 0) {
 			newX += gridWidth;
 			newY += levelOffsetY;
-			//console.log("X+");
 			return true;
 		}
 		return false;
@@ -1105,27 +1153,22 @@ function wrapCoords(newX, newY) {
 		if (newY >= gridHeight) {
 			newY -= gridHeight;
 			newX -= levelOffsetX;
-			//console.log("Y-");
 			return true;
 		} else if (newY < 0) {
 			newY += gridHeight;
 			newX += levelOffsetX;
-			//console.log("Y+");
 			return true;
 		}
 		return false;
 	}
 
 	var wrappedOnX = wrapX();
-	/*var wrappedOnY =*/ wrapY();
-	if (!wrappedOnX) { //QQQ Shouldn't this be the other way around?
+	var wrappedOnY = wrapY();
+	if (!wrappedOnX && wrappedOnY) {
 		wrapX();
 	}
-	/*if (!wrappedOnY) {
-		wrapY();
-	}*/
 
-	return {x: newX, y: newY}
+	return {x: newX, y: newY, wrapped: (wrappedOnX || wrappedOnY)}
 }
 
 function hasThing(array, x, y) { //Returns INDEX, not OBJECT!
@@ -1160,7 +1203,6 @@ function hasRubble(x, y) {
 function hasClosedGate(x, y) {
 	var gate = hasThing(gates, x, y);
 	if (gates[gate] != null) {
-		//console.log(gates[gate].target, amountOfLevelsSolved)
 		if (gates[gate].target <= amountOfLevelsSolved) {
 			return null;
 		}
@@ -1193,9 +1235,7 @@ function MovePlayer(horDelta, verDelta) {
 	else if (horDelta == 1) {dir = "r"}
 	else if (verDelta == 1) {dir = "d"}
 	else if (verDelta == -1) {dir = "u"}
-	else {throw new Error("MovePlayer function did not recieve valid arguments.")}
-
-	//console.log("------");
+	else {console.warn("MovePlayer was not called with valid arguments.")}
 
 	if (horDelta != 0 || verDelta != 0) {
 		undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
@@ -1210,17 +1250,12 @@ function MovePlayer(horDelta, verDelta) {
 		var targetX = target.x;
 		var targetY = target.y;
 
-		//console.log("x:"+player.x+"y:"+player.y+" tx:"+targetX+"ty:"+targetY);
-
 		let foundBox = hasBox(targetX, targetY);
-		//console.log("fb: "+foundBox);
 		if (foundBox !== null) {
 			var boxTarget = wrapCoords(targetX + horDelta, targetY + verDelta);
 			let boxTargetX = boxTarget.x;
 			let boxTargetY = boxTarget.y;
 
-			//console.log("bx: "+boxTargetX+" by:"+boxTargetY);
-			//console.log("hasWall:",hasWall(boxTargetX, boxTargetY))
 			if (hasWall(boxTargetX, boxTargetY) === null && hasBox(boxTargetX, boxTargetY) === null && hasRubble(boxTargetX, boxTargetY) === null) {
 				boxes[foundBox] = {x: boxTargetX, y: boxTargetY, shift: boxes[foundBox].shift};
 				player = {x: targetX, y: targetY};
@@ -1228,23 +1263,19 @@ function MovePlayer(horDelta, verDelta) {
 				boxPushed = true;
 
 				if (boxes[foundBox].shift != 0) {
-					if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal/x
+					if (boxes[foundBox].shift == 1 || boxes[foundBox].shift == 3) { //Horizontal (x)
 						ShiftX(horDelta);
 					}
 					
-					if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical/y
+					if (boxes[foundBox].shift == 2 || boxes[foundBox].shift == 3) { //Vertical (y)
 						ShiftY(verDelta);
 					}
 				}
-			} else {
-				console.log("Movement not resolved","Could not push box");
 			}
 		}
 		else if (hasWall(targetX, targetY) === null && hasClosedGate(targetX, targetY) === null) {
 			player = {x: targetX, y: targetY};
 			movementResolved = true;
-		} else {
-			console.log("Movement not resolved","Something was in the way");
 		}
 	}
 
@@ -1285,34 +1316,29 @@ function MovePlayer(horDelta, verDelta) {
 		}
 
 		if (hasWon) {
-			var lnt = steps.length;
-			var last = steps.lastIndexOf(" ");
-			var tot = lnt - last;
-
-			console.warn("Victory!",steps + " (" + tot + ")");
 			if (levelSolved[level] != 2) {
 				levelSolved[level] = 2;
 				amountOfLevelsSolved++;
 			}
 			saveGame();
 
-			audio("victory", true);
+			audio(sfx.VICTORY, true);
 			victory = true;
 			timeSinceLevelWon = 0;
 		} else {
 			if (boxPushed) {
 				if (prevLevelOffsetX != 0 || prevLevelOffsetY != 0) {
-					audio("shift");
+					audio(sfx.SHIFT);
 				} else {
-					audio("push");
+					audio(sfx.PUSH);
 				}
 			} else {
-				audio("walk");
+				audio(sfx.WALK);
 			}
 		}
 	} else {
 		if (horDelta != 0 || verDelta != 0) {
-			audio("bump");
+			audio(sfx.BUMP);
 			undoStack.pop(); //Nothing changed, so discard Undo state.
 		}
 		camShakeX = horDelta * 12;
@@ -1324,9 +1350,9 @@ function MovePlayer(horDelta, verDelta) {
 			levelOffsetX -= horDelta;
 			prevLevelOffsetX = -horDelta;
 			timeSinceLastAction = 0;
-			if (levelOffsetX >= gridWidth * 0.5) {
+			if (levelOffsetX > gridWidth * 0.5) {
 				levelOffsetX -= gridWidth;
-			} else if (levelOffsetX <= -gridWidth * 0.5) {
+			} else if (levelOffsetX < -gridWidth * 0.5) {
 				levelOffsetX += gridWidth;
 			}
 		} else {
@@ -1355,37 +1381,37 @@ function audio(soundID, alwaysPlay = false) {
 
 	if (timeSinceLastAudio >= timeUntilPlayableAudio || alwaysPlay) {
 		if (!alwaysPlay) {timeSinceLastAudio = 0;}
-		switch (soundID.toLowerCase()) {
-			case "select":
+		switch (soundID) {
+			case sfx.SELECT:
 				zzfx(...[,.3,176,.02,,.08,3,.4,-0.7,-21,-127,.01,.05,,,,.38,,.03]);
 				break;
-			case "bump":
+			case sfx.BUMP:
 				zzfx(...[,.3,220,.02,,.08,3,.4,-0.7,-21,-127,.01,.05,,,,.38,,.03]);
-			case "walk":
+			case sfx.WALK:
 				zzfx(...[.6,.1,176,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
 				break;
-			case "push":
+			case sfx.PUSH:
 				zzfx(...[.5,.1,220,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,,.1,,.02]);
 				break;
-			case "shift":
+			case sfx.SHIFT:
 				zzfx(...[.45,.1,250,.02,,.01,3,.4,-0.7,-21,-127,.01,.05,,,.1,.1,,.02]);
 				break;
-			case "victory":
+			case sfx.VICTORY:
 				zzfx(...[.6,,934,.12,.38,.93,1,.27,,.4,-434,.08,.2,.1,,.1,.17,.55,1,.46]);
 				break;
-			case "undo": 
+			case sfx.UNDO: 
 				zzfx(...[,,110,,,,1,1.82,,.1,,,,.1,,.1,.01,.7,.02,.15]);
 				break;
-			case "restart":
+			case sfx.RESTART:
 				zzfx(...[,,283,.02,,.11,,.38,,,,,.07,,,.1,.08,.63,.02]);
 				break;
-			case "menu":
+			case sfx.MENU:
 				zzfx(...[,.02,1638,,.05,.17,1,,,,490,.09,,,,.1,.05,.5,.03]);
 				break;
-			case "back":
+			case sfx.BACK:
 				zzfx(...[,,98,.08,.18,.02,2,2.47,36,.5,,,.04,.1,,.9,.44,,.04]);
 				break;
-			case "gameend":
+			case sfx.GAMEEND:
 				zzfx(...[,,525,.18,.28,.17,1,1.24,8.3,-9.7,-151,.03,.06,,,,,.93,.02,.14]);
 		}
 	}
@@ -1405,18 +1431,20 @@ function saveGame() {
 		}
 	}
 
-	ls.setItem("banbanban-levelsSolved",levelsSaved);
-	ls.setItem("banbanban-color",colorTheme);
-	ls.setItem("banbanban-audio", audioEnabled);
-	ls.setItem("banbanban-reduceMotion", reduceMotion);
-	ls.setItem("banbanban-version", 1);
+	ls.setItem("enf-l",levelsSaved);
+	ls.setItem("enf-c",colorTheme);
+	ls.setItem("enf-a", audioEnabled);
+	ls.setItem("enf-r", reduceMotion);
+	ls.setItem("enf-v", 1);
+	if (targetLevel != 0) {
+		ls.setItem("enf-t", targetLevel);
+	}
 }
 
 function loadGame() {
 	var ls = window.localStorage;
 
-	var loadedValue = ls.getItem("banbanban-levelsSolved");
-	//console.log(loadedValue);
+	var loadedValue = ls.getItem("enf-l");
 	if (loadedValue != null) {
 		for (var i = 1; i != levelSolved.length; i += 1) {
 			if (loadedValue[i-1] == "t") {
@@ -1428,17 +1456,22 @@ function loadGame() {
 		}
 	}
 
-	var loadedValue = parseInt(ls.getItem("banbanban-color", 0));
+	var loadedValue = parseInt(ls.getItem("enf-c"), 0);
 	if (loadedValue >= 0 && loadedValue < colors.length) {
 		colorTheme = loadedValue;
 	}
 
-	var loadedValue = ls.getItem("banbanban-audio");
+	var loadedValue = parseInt(ls.getItem("enf-t"), 0);
+	if (loadedValue >= 0 && loadedValue < levels.length) {
+		targetLevel = loadedValue;
+	}
+
+	var loadedValue = ls.getItem("enf-a");
 	if (loadedValue == "false") {
 		audioEnabled = false;
 	}
 
-	var loadedValue = ls.getItem("banbanban-reduceMotion");
+	var loadedValue = ls.getItem("enf-r");
 	reduceMotion = loadedValue == "true";
 }
 
@@ -1471,7 +1504,20 @@ function blendColors(colorA, colorB, amount) {
 	const b = Math.round(bA + (bB - bA) * amount).toString(16).padStart(2, '0');
 	return '#' + r + g + b;
   }
-  
-  //console.log(blendColors('#00FF66', '#443456', 0.5));
 
-console.warn("Todo: Polish, QA, make final level");
+function setCanvasScales(ls) {
+	playerCanvas.width = ls;
+	playerCanvas.height = ls;
+
+	wallCanvas.width = ls+wallMargin;
+	wallCanvas.height = ls+wallMargin;
+
+	boxCanvas.width = ls+boxMargin;
+	boxCanvas.height = ls+boxMargin;
+
+	rubbleCanvas.width = ls+rubbleMargin;
+	rubbleCanvas.height = ls+rubbleMargin;
+
+	targetCanvas.width = ls+targetMargin;
+	targetCanvas.height = ls+targetMargin;
+}

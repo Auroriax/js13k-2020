@@ -1,14 +1,14 @@
 var levels = [];
 levels.push([
-	{gates: [1, 3, 6, 12, 15], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
-	"##########.",
-	"p1g.1.1.1.g",
-	"##########.",
+	{gates: [6, 1, 3, 6, 11, 14, 14], levelSpread: [1, 5, 10, 17], yOff: -2}, //Level select
+	"##########",
+	"gp.1g.111.g",
+	"##########",
 	"2.2.2.2.2.g",
-	"##########.",
+	"##########",
 	".333.3333.g",
-	"##########.",
-	"4.4.4.4g4#."
+	"##########",
+	"4.4.4.4g4g"
 ]);
 levels.push([
 	{nr: 100, name: "A Wrapping World"}, //Hey, it's a normal Sokoban puzzle! Sorta.
@@ -16,7 +16,7 @@ levels.push([
 	"......#",
 	"...#..#",
 	"#.###.#",
-	".b#t.p.",
+	".b#t.p",
 	"..###.#",
 ]);
 levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
@@ -28,7 +28,7 @@ levels.push([ //Decent easy level, rdddlldddlruuuulldrllddru (25)
 	".tbt",
 ]);
 levels.push([
-	{nr: 102, name: "Glass Hallway"}, //Too easy to be interesting
+	{nr: 102, name: "Hallowed Hallway"}, //Too easy to be interesting
 	"##.##",
 	".t.tp",
 	"bb#bb",
@@ -45,7 +45,7 @@ levels.push([
 	"t.b.t"
 ]);
 levels.push([
-	{nr: 200, name: "Wrap Around The Block", yOff: 2}, //Wrap offset introduction puzzle
+	{nr: 200, name: "Straight Spiral", yOff: 2}, //Wrap offset introduction puzzle
 	"",
 	"####",
 	"",
@@ -128,7 +128,7 @@ levels.push([
 	"##.#.###.#.#",
 ]);
 levels.push([
-	{nr: 305, name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
+	{nr: 305, name: "Riddle Raster", yOff: -1}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDDrrurrRllU (48)
 	"",
 	".t",
 	"#|#",
@@ -152,9 +152,14 @@ levels.push([
 ]);
 levels.push([
 	{nr: 400, name: "Rubble Rundown"}, //rDullllluLLLLLLLLLLDuuuurRurDrrrddllLUdDudDrrurrRllU (50)
-	"rrr#..r#",
-	".pb...r#",
-	"#t######"
+	"#tr.r.",
+	"#rrrr.",
+	"#pb...",
+	"#rrrrr",
+	"#r.-.r",
+	"#r#r#r",
+	"#r...r",
+	"#r.r.r"
 ]);
 levels.push([
 	{nr: 401, name: "Quality Questions", yOff: -2}, //rrrrrrDurrrrrUdrrrrrrrrrlDurrrrrrUdrrrrrrrDurrrrrrrrrrrUdlllrrrrrrrrrrDurrrrrrrlUdrrrrrrrrrlDurrrUdrrrrU (104)
@@ -184,14 +189,14 @@ levels.push([
 	"#rrtrr#",
 	"...+",
 	"#rrtrr#",
-	"q#r.r#q", //The q's mark possible target locations
-	"bq#.#.b",
+	".#r.r#.", //The q's mark possible target locations
+	"b.#.#.b",
 ]);
 levels.push([
-	{nr: 404, name: "Edge Not Found", autoX: 1},
-	"",
-	"#.#.###.#.#",
-	"#p#.#.#.#t#",
-	"###.#.#.###",
-	"..#.###...#",
+	{nr: 404, name: "Edge Not Found", autoX: -1},
+	"#.##.#...#",
+	"#b##.#...#",
+	"#p##t#####",
+	"##..######",
+	"##..######"
 ]);

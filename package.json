@@ -1,0 +1,23 @@
+{
+    "app_name": "Edge Not Found",
+    "description": "Edge Not Found - Infinite Sokolike",
+    "main": "index.html",
+    "name": "edgenotfound",
+    "version": "1.0.0",
+    "webkit": {},
+    "window": {
+        "exe_icon": "favicon.png",
+        "frame": true,
+        "height": 720,
+        "icon": "favicon.png",
+        "id": "js13k-2020",
+        "mac_icon": "favicon.png",
+        "min_height": 360,
+        "min_width": 640,
+        "position": "center",
+        "resizable": true,
+        "show": true,
+        "title": "Edge Not Found",
+        "width": 960
+    }
+}
