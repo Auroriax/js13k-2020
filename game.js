@@ -378,6 +378,10 @@ function gameLoop() {
 			alph = 0;
 		}
 
+		if (localScale < 0) {
+			localScale = 0
+		}
+
 		if (reduceMotion) {
 			var localScale = scale;
 		}
@@ -669,7 +673,7 @@ function gameLoop() {
 		const canvas = document.getElementById("canvas");
 		if (canvas) {
 			console.log("Size of the canvas:",{width: canvas.width, height: canvas.height});
-			ctx.font = "30px sans-serif";
+			ctx.font = "24px sans-serif";
 			ctx.fillStyle = "red";
 			ctx.textAlign = "center";
 			ctx.fillText("Whoops, the game crashed! See the console for more info.",canvas.clientWidth/2,50);
@@ -963,10 +967,10 @@ function input(event) {
 			}
 			return;
 		} else if (event.shiftKey && key == "n" || key == "N") {
-			loadLevel(Math.min(level + 1, levels.length-1 )); //QQQ
+			loadLevel(Math.min(level + 1, levels.length-1 ));
 			return;
 		} else if (event.shiftKey && key == "b" || key == "B") {
-			loadLevel(Math.max(level - 1, 0 )); //QQQ
+			loadLevel(Math.max(level - 1, 0 ));
 			return;
 		}
 	}
@@ -1231,7 +1235,7 @@ function MovePlayer(horDelta, verDelta) {
 	else if (horDelta == 1) {dir = "r"}
 	else if (verDelta == 1) {dir = "d"}
 	else if (verDelta == -1) {dir = "u"}
-	else {return;}
+	else {console.warn("MovePlayer was not called with valid arguments.")}
 
 	if (horDelta != 0 || verDelta != 0) {
 		undoStack.push({player: player, boxes: boxes.slice(), xOff: levelOffsetX, yOff: levelOffsetY}); //Other objects can't move, so aren't stored.
