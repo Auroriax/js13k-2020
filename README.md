@@ -2,7 +2,8 @@ Edge Not Found is a Sokoban-style puzzle game set on an infinitely repeating gri
 
 ![Title screen of Edge Not Found.](https://auroriax.com/wp-content/uploads/2020/09/enf_title-e1600798525227.png)
 
-#Postmortem
+# Postmortem
+
 So I participated in js13k again this year, this time sticking to my cards better and decided to make an [eye- as much as a brain-bending puzzle game called Edge Not Found](https://auroriax.itch.io/edge-not-found). After working for almost a year in TypeScript (and Canvas) for my job, I feel I have a lot more experience working with the browser, along with the things I've learned from my entry last year. So here's another larger-than-13kb postmortem about a smallen-than-13kb game.
 
 [js13k](http://js13kgames.com/) last year was the most fun I've had with a game jam. There's [a lot of activity from devs on Twitter](https://twitter.com/hashtag/js13k?f=live) (though not overwhelmingly so), the month-long deadline is very relaxed compared to some other game jams (you'll finish on time even if you contribute just half a kilobyte per day!), and there are simply [some amazing technical marvels](https://twitter.com/MaximeEuziere/status/1306553299416608769) that people create even despite all these limitations.
