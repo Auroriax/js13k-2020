@@ -11,6 +11,8 @@ const obj = {
 	LEVELTWO: "2",
 	LEVELTHREE: "3",
 	LEVELFOUR: "4",
+	LEVELFIVE: "5",
+	LEVELSIX: "6",
 	RUBBLE: "r",
 	GATE: "g",
 }; //all lowercase if applicable!
@@ -36,13 +38,15 @@ var roughSeed = 1;
 
 const timing = new Timing((1/ 10), (1 / 60));
 
+var defaultRoughness = 0.8;
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d", { alpha: false });
-const roughCanvas = rough.canvas(canvas);
+const roughCanvas = rough.canvas(canvas, {roughness: defaultRoughness});
 
 const levelCanvas = document.createElement("canvas");
 const levelCtx = levelCanvas.getContext("2d");
-const roughLevel = rough.canvas(levelCanvas);
+const roughLevel = rough.canvas(levelCanvas, {roughness: defaultRoughness});
 
 const pathCanvas = document.createElement("canvas");
 const pathCtx = pathCanvas.getContext("2d");
@@ -59,12 +63,12 @@ const roughPlayer = rough.canvas(playerCanvas);
 
 const boxCanvas = document.createElement("canvas");
 const boxCtx = boxCanvas.getContext("2d");
-const roughBox = rough.canvas(boxCanvas);
+const roughBox = rough.canvas(boxCanvas, {roughness: defaultRoughness});
 const boxMargin = 10;
 
 const targetCanvas = document.createElement("canvas");
 const targetCtx = targetCanvas.getContext("2d");
-const roughTarget = rough.canvas(targetCanvas);
+const roughTarget = rough.canvas(targetCanvas, {roughness: defaultRoughness});
 const targetMargin = 15;
 
 const rubbleCanvas = document.createElement("canvas");
@@ -136,7 +140,7 @@ var prevVerDelta = 0;
 var timeSinceLastAction = 0;
 var timeToCompleteTween = 0.1;
 
-var timeToUpdateRenders = (1/3);
+var timeToUpdateRenders = 0.4;
 var timeSinceUpdatedRenders = timeToUpdateRenders;
 
 var timeUntilLevelEnd = 4;
@@ -160,6 +164,42 @@ var timeSinceMenuToggled = timeToToggleMenu;
 
 var menuOpened = false;
 var menuSelection = 0;
+
+var splashScreen = true;
+var splashScreenImage = new Image(800,600);
+var splashScreenImageLoaded = false;
+splashScreenImage.onload = function() {splashScreenImageLoaded = true};
+splashScreenImage.src = "splash.png";
+
+var forceUnlockAllLevels = false;
+
+canvas.addEventListener('click', function() { 
+	domain = window.location.origin;
+    var validDomain = (domain == "https://www.coolmath-games.com" ||
+          domain == "m.coolmathgames.com" ||
+          domain == "dev.coolmathgames.com" ||
+          domain == "edit-stage.coolmathgames.com" ||
+          domain == "www.stage.coolmathgames.com" ||
+          domain == "edit.coolmathgames.com" ||
+          domain == "www.coolmathgames.com" ||
+          domain == "https://www.coolmathgames.com" ||
+          domain == "m.coolmath-games.com" ||
+          domain == "m.coolmathgames.com" ||
+          domain == "dev.coolmath-games.com" ||
+          domain == "edit-stage.coolmath-games.com" ||
+          domain == "www.stage.coolmath-games.com" ||
+          domain == "edit.coolmath-games.com" ||
+		  domain == "www.coolmath-games.com" ||
+		  domain == "http://127.0.0.1:5500")
+	if (splashScreen && splashScreenImageLoaded) {
+		if (validDomain) {
+			splashScreen = false;
+		} else {
+			window.alert("Sorry, this game is sitelocked!");
+		}
+	}
+}, false);
+
 var titleScreen = true;
 
 var verticalInput = new InputHandler(["KeyS", "ArrowDown"], ["KeyW", "ArrowUp"], timing, 0.1, 0.2);
@@ -251,11 +291,12 @@ function gameLoop() {
 				}
 				if (confirmInput.fired) {
 					if (timeSinceLevelStart >= timeToLoadLevel) {
-						var lvl = hasLevelNode(player.x, player.y);
-						if (lvl != null) {
-							targetLevel = levelNodes[lvl].target;
+						var lvlNode = hasLevelNode(player.x, player.y);
+						if (lvlNode != null) {
+							targetLevel = levelNodes[lvlNode].target;
 							victory = true;
 							timeSinceLevelWon = 0;
+							coolmathCallLevelStart(targetLevel);
 							audio(sfx.SELECT);
 						}
 					}
@@ -560,7 +601,20 @@ function gameLoop() {
 			ctx.textBaseline = "middle";
 
 			//Draw title screen
-			if (titleScreen) {
+			if (splashScreen) {
+				ctx.fillStyle = "#242424";
+				ctx.fillRect(0,0, canvas.width, canvas.height);
+				ctx.font = Math.round(scale * 0.5) + fontDefault;
+				ctx.textAlign = "center";
+				if (splashScreenImageLoaded) {
+					ctx.drawImage(splashScreenImage, canvas.width * 0.5 - 400, canvas.height * 0.5 - 300);
+					drawStroked(ctx, "Click anywhere to continue!",canvas.width * .5,canvas.height * .8);
+				} else {
+
+					drawStroked(ctx, "Loading...",canvas.width * .5,canvas.height * .6);
+				}
+			}
+			else if (titleScreen) {
 				ctx.font = Math.round(scale * 1.2) + fontDefault;
 				ctx.textAlign = "left";
 				ctx.textBaseline = "center";
@@ -652,7 +706,7 @@ function gameLoop() {
 					ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
 				} else {
 					ctx.font = 16 + fontDefault;
-					ctx.fillText("Game by Tom Hermans for js13k 2020", width * 0.5, textBase + textOffset * 3.8);
+					ctx.fillText("Game by Tom Hermans for Coolmath Games", width * 0.5, textBase + textOffset * 3.8);
 					ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
 					ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
 				}
@@ -849,7 +903,7 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 			levelCtx.fillText("✓", PosX(levelNodes[i].x) + targetCanvas.width * 0.75 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.75);
 		} else if (levelSolved[i+1] == 0) {
 			levelCtx.font = "bold " + Math.round(0.25 * localScale)+ fontDefault;
-			levelCtx.fillText("!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.775);
+			levelCtx.fillText("New!", PosX(levelNodes[i].x) + targetCanvas.width * 0.5 - targetMargin * 0.5, PosY(levelNodes[i].y) - targetMargin * 0.5 + targetCanvas.height * 0.775);
 		}
 	}
 
@@ -930,8 +984,9 @@ function drawLevel(rootX,rootY, gridWidth, gridHeight, localScale) {
 
 function input(event) {
 	if (victory) {return;}
-	if (titleScreen) {
+	if (titleScreen && !splashScreen) {
 		audio(sfx.SELECT, true);
+		coolmathCallStart();
 		titleScreen = false;
 		return;
 	}
@@ -964,6 +1019,7 @@ function input(event) {
 				verticalInput.reset();
 				undoInput.reset();
 				loadLevel(level, false);
+				coolmathCallLevelRestart(level);
 			}
 			return;
 		} else if (event.shiftKey && key == "n" || key == "N") {
@@ -1089,31 +1145,19 @@ function loadLevel(number, resetStack = true) {
 					levelsPlaced[0]++;
 					break;
 				case obj.LEVELTWO:
-					if (amountOfLevelsSolved < metadata.gates[2]) {
-						targets.push({x: x, y: y});
-						break;
-					}
-					levelNodes.push({x: x, y: y, target: levelsPlaced[1]});
-					checkPlayer(x, y, levelsPlaced[1]);
-					levelsPlaced[1]++;
+					AddLevelNode(1, x, y);
 					break;
 				case obj.LEVELTHREE:
-					if (amountOfLevelsSolved < metadata.gates[3]) {
-						targets.push({x: x, y: y});
-						break;
-					}
-					levelNodes.push({x: x, y: y, target: levelsPlaced[2]});
-					checkPlayer(x, y, levelsPlaced[2]);
-					levelsPlaced[2]++;
+					AddLevelNode(2, x, y);
 					break;
 				case obj.LEVELFOUR:
-					if (amountOfLevelsSolved < metadata.gates[4]) {
-						targets.push({x: x, y: y});
-						break;
-					}
-					levelNodes.push({x: x, y: y, target: levelsPlaced[3]});
-					checkPlayer(x, y, levelsPlaced[3]);
-					levelsPlaced[3]++;
+					AddLevelNode(3, x, y);
+					break;
+				case obj.LEVELFIVE:
+					AddLevelNode(4, x, y);
+					break;
+				case obj.LEVELSIX:
+					AddLevelNode(5, x, y);
 					break;
 				case obj.RUBBLE:
 					rubble.push({x: x, y: y});
@@ -1123,6 +1167,20 @@ function loadLevel(number, resetStack = true) {
 					gatesPlaced++;
 			}
 		}
+	}
+
+	function AddLevelNode(worldNumber, x, y) {
+		if (amountOfLevelsSolved < metadata.gates[worldNumber] && !forceUnlockAllLevels) {
+			if (worldNumber != 0 && amountOfLevelsSolved < metadata.gates[worldNumber-1] || worldNumber == 1) {
+				targets.push({x: x, y: y});
+			} else {
+				gates.push({x: x, y: y, target: metadata.gates[worldNumber]});
+			}
+			return;
+		}
+		levelNodes.push({x: x, y: y, target: levelsPlaced[worldNumber]});
+		checkPlayer(x, y, levelsPlaced[worldNumber]);
+		levelsPlaced[worldNumber]++;
 	}
 
 	if (resetStack) {
@@ -1180,27 +1238,27 @@ function hasThing(array, x, y) { //Returns INDEX, not OBJECT!
 	return null;
 }
 
-function hasWall(x, y) {
+function hasWall(x, y) { //Returns INDEX, not OBJECT!
 	return hasThing(walls, x, y)
 }
 
-function hasBox(x, y) {
+function hasBox(x, y) { //Returns INDEX, not OBJECT!
 	return hasThing(boxes, x, y)
 }
 
-function hasTarget(x, y) {
+function hasTarget(x, y) { //Returns INDEX, not OBJECT!
 	return hasThing(targets, x, y)
 }
 
-function hasLevelNode(x, y) {
+function hasLevelNode(x, y) { //Returns INDEX, not OBJECT!
 	return hasThing(levelNodes, x, y)
 }
 
-function hasRubble(x, y) {
+function hasRubble(x, y) { //Returns INDEX, not OBJECT!
 	return hasThing(rubble, x, y)
 }
 
-function hasClosedGate(x, y) {
+function hasClosedGate(x, y) { //Returns INDEX, not OBJECT!
 	var gate = hasThing(gates, x, y);
 	if (gates[gate] != null) {
 		if (gates[gate].target <= amountOfLevelsSolved) {
@@ -1273,7 +1331,7 @@ function MovePlayer(horDelta, verDelta) {
 				}
 			}
 		}
-		else if (hasWall(targetX, targetY) === null && hasClosedGate(targetX, targetY) === null) {
+		else if (hasWall(targetX, targetY) === null) {
 			player = {x: targetX, y: targetY};
 			movementResolved = true;
 		}
@@ -1293,8 +1351,14 @@ function MovePlayer(horDelta, verDelta) {
 		freshState = false;
 
 		if (level == 0) {
-			var lvl = hasLevelNode(player.x, player.y);
-			setLevelName(lvl,1);
+			if (hasClosedGate(targetX, targetY) !== null) {
+				var gate = hasClosedGate(targetX, targetY);
+				var leftToSolve = gates[gate].target - amountOfLevelsSolved;
+				setLevelName(-leftToSolve,1);
+			} else {
+				var lvl = hasLevelNode(player.x, player.y);
+				setLevelName(lvl,1);
+			}
 		}
 
 		if (autoScrollX) {
@@ -1435,6 +1499,7 @@ function saveGame() {
 	ls.setItem("enf-c",colorTheme);
 	ls.setItem("enf-a", audioEnabled);
 	ls.setItem("enf-r", reduceMotion);
+	ls.setItem("enf-u", forceUnlockAllLevels);
 	ls.setItem("enf-v", 1);
 	if (targetLevel != 0) {
 		ls.setItem("enf-t", targetLevel);
@@ -1473,14 +1538,24 @@ function loadGame() {
 
 	var loadedValue = ls.getItem("enf-r");
 	reduceMotion = loadedValue == "true";
+
+	var loadedValue = ls.getItem("enf-u");
+	forceUnlockAllLevels = loadedValue == "true";
 }
 
-function setLevelName(lvl, offset = 0) {
+function setLevelName(targetLevel, offset = 0) {
 	var prevName = levelName;
-	if (level != 0 && !levelSolved.includes(2)) {
+
+	if (targetLevel < 0) { //Negative values for locked levels
+		if (targetLevel == -1) {
+			levelName = "Solve 1 more puzzle to unlock!";
+		} else {
+			levelName = "Solve "+(-targetLevel)+" more puzzles to unlock!";
+		}
+	} else if (level != 0 && !levelSolved.includes(2)) {
 		levelName = "Push the box to the goal!";
-	} else if (lvl != null && lvl + offset != 0) {
-		levelName = levels[lvl + offset][0].nr+": "+levels[lvl + offset][0].name;
+	} else if (targetLevel != null && targetLevel + offset != 0) {
+		levelName = levels[targetLevel + offset][0].nr+": "+levels[targetLevel + offset][0].name;
 		if (level == 0) {
 			levelName += " - [Space] to enter";
 		}
@@ -1489,6 +1564,7 @@ function setLevelName(lvl, offset = 0) {
 	} else {
 		levelName = "";
 	}
+
 	if (prevName != levelName) {
 		timeSinceLevelNameChanged = 0;
 	}
@@ -1520,4 +1596,14 @@ function setCanvasScales(ls) {
 
 	targetCanvas.width = ls+targetMargin;
 	targetCanvas.height = ls+targetMargin;
+}
+
+//For the CoolMath version of the game.
+function unlockAllLevels() {
+	if (amountOfLevelsSolved != levels.length) {
+		forceUnlockAllLevels = true;
+		if (level == 0) {
+			loadLevel(0);
+		}
+	}
 }

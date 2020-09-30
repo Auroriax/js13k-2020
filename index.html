@@ -2,7 +2,7 @@
 <html lang="en">
 	<head>
 		<meta charset="utf-8">
-		<title>Edge Not Found</title>
+		<title>Edge Not Found - Play it now at CoolmathGames.com</title>
 		<link rel="stylesheet" href="style.css">
 		<link rel="icon" type="image/ico">
 		<meta property="og:title" content="Edge Not Found" />
@@ -10,11 +10,21 @@
 	</head>
 	<body>
 		<noscript>Please enable Javascript to play this game!</noscript>
+		<div id="browserUnsupported">Your browser is not supported. Consider updating to a newer one.</div>
 		<canvas id="canvas" width="500" height="500"> </canvas>
+		<script>
+			document.addEventListener("DOMContentLoaded", function() {
+
+				if (window.document.documentMode) {
+					document.getElementById("browserUnsupported").style.visibility = "visible"; 
+				}
+			});
+		</script>
 		<script src="tomato.js"></script>
 		<script src="rough.js"></script>
 		<script src="zzfx.js"></script>
 		<script src="levels.js"></script>
+		<script src="coolmath.js"></script>
 		<script src="game.js"></script>
 	</body>
 </html>

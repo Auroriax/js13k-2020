@@ -4,3 +4,8 @@ html, body, canvas {
     margin: 0;
     overflow: hidden;
   }
+
+#browserUnsupported {
+  position: fixed;
+  visibility: hidden;
+}
