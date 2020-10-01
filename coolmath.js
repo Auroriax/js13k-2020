@@ -4,7 +4,7 @@ function coolmathCallStart() {
             parent.cmgGameEvent("start");
         } catch (e) {}
     }
-    console.log("game start event");
+    console.log("Coolmath: Game start event");
 }
 
 function coolmathCallLevelStart(level) {
@@ -13,7 +13,7 @@ function coolmathCallLevelStart(level) {
             parent.cmgGameEvent("start", String(level));
         } catch (e) {}
     }
-    console.log("level start " + level);
+    console.log("CoolMath: Level started " + level);
 }
 
 function coolmathCallLevelRestart(level) {
@@ -22,5 +22,5 @@ function coolmathCallLevelRestart(level) {
             parent.cmgGameEvent("replay", String(level));
         } catch (e) {}
     }
-    console.log("level restart " + level);
+    console.log("Coolmath: Level restart " + level);
 }
