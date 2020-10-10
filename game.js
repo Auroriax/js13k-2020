@@ -168,29 +168,19 @@ var menuSelection = 0;
 var splashScreen = true;
 var splashScreenImage = new Image(800,600);
 var splashScreenImageLoaded = false;
-splashScreenImage.onload = function() {splashScreenImageLoaded = true};
-splashScreenImage.src = "splash.png";
+var splashScreenURL = null;
+if (splashScreenURL) {
+	splashScreenImage.onload = function() {splashScreenImageLoaded = true};
+	splashScreenImage.src = splashScreenURL;
+} else {
+	splashScreen = false;
+}
 
 var forceUnlockAllLevels = false;
 
 canvas.addEventListener('click', function() { 
 	domain = window.location.origin;
-    var validDomain = (domain == "https://www.coolmath-games.com" ||
-          domain == "m.coolmathgames.com" ||
-          domain == "dev.coolmathgames.com" ||
-          domain == "edit-stage.coolmathgames.com" ||
-          domain == "www.stage.coolmathgames.com" ||
-          domain == "edit.coolmathgames.com" ||
-          domain == "www.coolmathgames.com" ||
-          domain == "https://www.coolmathgames.com" ||
-          domain == "m.coolmath-games.com" ||
-          domain == "m.coolmathgames.com" ||
-          domain == "dev.coolmath-games.com" ||
-          domain == "edit-stage.coolmath-games.com" ||
-          domain == "www.stage.coolmath-games.com" ||
-          domain == "edit.coolmath-games.com" ||
-		  domain == "www.coolmath-games.com" ||
-		  domain == "http://127.0.0.1:5500")
+    var validDomain = true; //Overwrite to sitelock the game
 	if (splashScreen && splashScreenImageLoaded) {
 		if (validDomain) {
 			splashScreen = false;
@@ -296,7 +286,6 @@ function gameLoop() {
 							targetLevel = levelNodes[lvlNode].target;
 							victory = true;
 							timeSinceLevelWon = 0;
-							coolmathCallLevelStart(targetLevel);
 							audio(sfx.SELECT);
 						}
 					}
@@ -706,7 +695,7 @@ function gameLoop() {
 					ctx.fillText("Back to Level Select", width * 0.5, textBase + textOffset * 4 );
 				} else {
 					ctx.font = 16 + fontDefault;
-					ctx.fillText("Game by Tom Hermans for Coolmath Games", width * 0.5, textBase + textOffset * 3.8);
+					ctx.fillText("Game by Tom Hermans - v1.1.0", width * 0.5, textBase + textOffset * 3.8);
 					ctx.fillText("rough - Copyright (c) 2019 Preet Shihn", width * 0.5, textBase + textOffset * 4.2);
 					ctx.fillText("ZzFX - Copyright (c) 2019 Frank Force", width * 0.5, textBase + textOffset * 4.6);
 				}
@@ -986,7 +975,6 @@ function input(event) {
 	if (victory) {return;}
 	if (titleScreen && !splashScreen) {
 		audio(sfx.SELECT, true);
-		coolmathCallStart();
 		titleScreen = false;
 		return;
 	}
@@ -1019,7 +1007,6 @@ function input(event) {
 				verticalInput.reset();
 				undoInput.reset();
 				loadLevel(level, false);
-				coolmathCallLevelRestart(level);
 			}
 			return;
 		} else if (event.shiftKey && key == "n" || key == "N") {
@@ -1598,7 +1585,7 @@ function setCanvasScales(ls) {
 	targetCanvas.height = ls+targetMargin;
 }
 
-//For the CoolMath version of the game.
+//Hidden command to unlock all levels.
 function unlockAllLevels() {
 	if (amountOfLevelsSolved != levels.length) {
 		forceUnlockAllLevels = true;
